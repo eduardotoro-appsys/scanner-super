@@ -13,9 +13,20 @@
         header { background-color: #2e7d32; color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         h1 { margin: 0; font-size: 1.2rem; }
 
-        /* CÁMARA */
-        #scanner-container { width: 100%; height: 300px; background: black; position: relative; overflow: hidden; }
-        #reader { width: 100%; height: 100%; object-fit: cover; }
+        /* CÁMARA CORREGIDA */
+        #scanner-container { 
+            width: 100%; 
+            background: black; 
+            /* Quitamos la altura fija para que se adapte al video */
+            min-height: 300px;
+            position: relative; 
+        }
+        /* Esto asegura que veas lo que la máquina ve */
+        #reader video { 
+            width: 100%; 
+            height: auto;
+            object-fit: contain !important; 
+        }
         
         /* CONTROLES */
         .dashboard { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
@@ -234,14 +245,35 @@
     function startScanner() {
         try {
             const html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
             
+            // CONFIGURACIÓN OPTIMIZADA PARA BARRAS
+            const config = { 
+                fps: 10, 
+                // El cuadro de escaneo es rectangular (más ancho que alto) para encajar con códigos de barra
+                qrbox: { width: 250, height: 150 }, 
+                // Importante: Le decimos que NO busque todos los formatos, solo los de super
+                formatsToSupport: [ 
+                    Html5QrcodeSupportedFormats.EAN_13, 
+                    Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.UPC_E
+                ]
+            };
+            
+            // Usamos la cámara trasera
             html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
             .then(() => {
                 document.getElementById('start-btn').style.display = 'none';
+                showToast("Cámara activa. Apunta a un código.", true);
+            })
+            .catch(err => {
+                // Si falla la trasera, intenta con cualquier cámara
+                console.warn("Fallo cámara trasera, intentando default...", err);
+                html5QrCode.start({ facingMode: "user" }, config, onScanSuccess);
             });
+
         } catch (e) {
-            alert("Error cámara: " + e);
+            alert("Error crítico cámara: " + e);
         }
     }
 </script>
