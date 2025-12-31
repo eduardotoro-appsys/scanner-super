@@ -108,15 +108,49 @@
         }, 2000);
     }
 
+    // Función MEJORADA: Agrega botón de borrar
     function addToCart(name, price) {
+        // 1. Sumar al total
         total += price;
-        document.getElementById('total-amount').innerText = '$' + total.toLocaleString();
+        updateTotalDisplay();
         
+        // 2. Crear el elemento visual
         const ul = document.getElementById('cart-list');
         const li = document.createElement('li');
         li.className = 'product-item';
-        li.innerHTML = `<span>${name}</span> <strong>$${price}</strong>`;
+        
+        // Agregamos un ID único temporal para poder identificar este item si quisiéramos
+        li.innerHTML = `
+            <div style="flex-grow: 1;">
+                <span>${name}</span><br>
+                <small style="color: #666;">$${price}</small>
+            </div>
+            <button onclick="removeFromCart(this, ${price})" style="width: auto; padding: 5px 10px; background: #e53935; margin: 0; margin-left: 10px;">
+                🗑️
+            </button>
+        `;
+        
+        // Insertar al principio de la lista
         ul.insertBefore(li, ul.firstChild);
+    }
+
+    // NUEVA FUNCIÓN: Restar y borrar visualmente
+    function removeFromCart(buttonElement, price) {
+        if(!confirm("¿Borrar este producto del carrito?")) return;
+
+        // 1. Restar del total
+        total -= price;
+        if (total < 0) total = 0; // Seguridad para que no de negativo
+        updateTotalDisplay();
+
+        // 2. Eliminar la línea visual (el padre del botón es el <li>)
+        const li = buttonElement.parentElement;
+        li.remove();
+    }
+
+    // Función auxiliar para actualizar el texto del precio
+    function updateTotalDisplay() {
+        document.getElementById('total-amount').innerText = '$' + total.toLocaleString();
     }
 
     function startScanner() {
