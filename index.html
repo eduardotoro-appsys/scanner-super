@@ -3,74 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro</title>
+    <title>Scanner Pro V4</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2e7d32">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; }
         
-        /* HEADER */
         header { background-color: #2e7d32; color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        h1 { margin: 0; font-size: 1.2rem; }
-
-        /* CÁMARA CORREGIDA */
-        #scanner-container { 
-            width: 100%; 
-            background: black; 
-            /* Quitamos la altura fija para que se adapte al video */
-            min-height: 300px;
-            position: relative; 
-        }
-        /* Esto asegura que veas lo que la máquina ve */
-        #reader video { 
-            width: 100%; 
-            height: auto;
-            object-fit: contain !important; 
-        }
         
-        /* CONTROLES */
+        #scanner-container { width: 100%; background: black; min-height: 300px; position: relative; }
+        #reader video { width: 100%; height: auto; object-fit: contain !important; }
+        
         .dashboard { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
         
         .btn-main { width: 100%; padding: 15px; background-color: #2e7d32; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; margin-bottom: 15px; cursor: pointer; }
-        .btn-delete { background: #e53935; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 1.2rem; margin-left: 10px; }
-
-        /* TOTAL */
+        
+        /* Total Box */
         .total-box { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .total-price { font-size: 2.5rem; font-weight: 800; color: #2e7d32; margin-top: 5px; }
 
-        /* LISTA */
+        /* Lista */
         .product-list { list-style: none; padding: 0; }
-        .product-item { background: white; border-bottom: 1px solid #f0f0f0; padding: 15px; display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.3s ease; }
+        .product-item { background: white; border-bottom: 1px solid #f0f0f0; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-delete { background: #e53935; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin-left: 10px; cursor: pointer;}
+
+        /* MODAL */
+        #product-modal {
+            display: none; position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; padding: 25px 20px;
+            box-shadow: 0 -4px 30px rgba(0,0,0,0.3);
+            border-radius: 20px 20px 0 0; z-index: 100;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .history-tag { font-size: 0.8rem; background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; display: none; }
         
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- MODAL PARA NUEVO PRODUCTO (Overlay) --- */
-        #new-product-modal {
-            display: none; /* Oculto por defecto */
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: white; padding: 20px;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
-            border-radius: 20px 20px 0 0;
-            z-index: 100;
-        }
-        .modal-title { font-weight: bold; margin-bottom: 15px; display: block; font-size: 1.1rem; }
-        .input-group { margin-bottom: 15px; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; }
+        input { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1.1rem; box-sizing: border-box; margin-bottom: 15px; }
+        
         .modal-btns { display: flex; gap: 10px; }
-        .btn-save { flex: 1; background: #2e7d32; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; }
-        .btn-cancel { flex: 1; background: #ddd; color: #333; padding: 12px; border: none; border-radius: 8px; font-weight: bold; }
+        .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; }
+        .btn-cancel { flex: 1; background: #f5f5f5; color: #333; padding: 15px; border: none; border-radius: 8px; font-weight: bold; }
 
-        /* --- NOTIFICACIÓN TOAST --- */
-        #toast {
-            visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 101; left: 50%; bottom: 30px; font-size: 17px; opacity: 0; transition: opacity 0.5s, bottom 0.5s;
-        }
+        /* TOAST */
+        #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 101; left: 50%; bottom: 30px; opacity: 0; transition: opacity 0.5s, bottom 0.5s; }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
-        #toast.success { background-color: #2e7d32; }
     </style>
 </head>
 <body>
 
-<header><h1>🛒 Scanner Pro</h1></header>
+<header><h1>🛒 Scanner V4</h1></header>
 
 <div id="scanner-container">
     <div id="reader"></div>
@@ -84,118 +70,113 @@
         <div class="total-price" id="total-amount">$0</div>
     </div>
 
-    <h3>Tu Carrito:</h3>
     <ul class="product-list" id="cart-list"></ul>
 </div>
 
-<div id="new-product-modal">
-    <span class="modal-title">🆕 Nuevo Producto Detectado</span>
-    <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px;" id="modal-barcode-display">Code: ...</div>
+<div id="product-modal">
+    <div class="modal-header">
+        <span style="font-weight:bold; font-size: 1.1rem;">📝 Validar Producto</span>
+        <span id="history-badge" class="history-tag">Precio Registrado</span>
+    </div>
     
-    <div class="input-group">
-        <input type="text" id="inp-name" placeholder="Nombre (ej: Arroz 1kg)">
-    </div>
-    <div class="input-group">
-        <input type="number" id="inp-price" placeholder="Precio (ej: 1200)" inputmode="numeric">
-    </div>
+    <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px;" id="modal-barcode">...</div>
+    
+    <input type="text" id="inp-name" placeholder="Nombre del producto">
+    <input type="tel" id="inp-price" placeholder="Precio ($)" inputmode="numeric">
     
     <div class="modal-btns">
         <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-        <button class="btn-save" onclick="saveNewProduct()">Guardar</button>
+        <button class="btn-confirm" onclick="saveAndAdd()">✅ Confirmar</button>
     </div>
 </div>
 
 <div id="toast">Mensaje...</div>
 
 <script>
-    // --- 1. TUS CLAVES DE SUPABASE ---
+    // --- 1. PEGA TUS CLAVES DE SUPABASE AQUÍ ---
     const SUPABASE_URL = 'https://hviansyzbyzkfdmgujah.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_sfFASSOkI15dXpf5vulSRQ_f5EZTW4_';
+    // -------------------------------------------
     
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    // ---------------------------------
 
     let total = 0;
     let lastScannedCode = null;
     let isProcessing = false;
-    let currentBarcodeForModal = null;
+    let currentBarcode = null;
 
     // --- LÓGICA DE ESCANEO ---
-    async function onScanSuccess(decodedText, decodedResult) {
-        if (isProcessing) return; // Si estamos ocupados, ignorar escaneos
-
-        // Evitar re-escanear el mismo producto inmediatamente
-        if (decodedText === lastScannedCode) return;
-
+    async function onScanSuccess(decodedText) {
+        if (isProcessing || decodedText === lastScannedCode) return;
+        
         isProcessing = true;
         lastScannedCode = decodedText;
-        showToast("🔍 Buscando...", false);
+        showToast("🔎 Verificando precio...");
 
         try {
-            // Consultar Supabase
-            let { data: product, error } = await db
-                .from('products')
-                .select('*')
-                .eq('barcode', decodedText)
-                .single();
+            // Buscamos si existe
+            let { data: product } = await db.from('products').select('*').eq('barcode', decodedText).single();
 
             if (product) {
-                // EXISTE: Agregamos directo y mostramos aviso verde
-                addToCart(product.name, product.price);
-                showToast(`✅ ${product.name} agregado`, true);
-                
-                // Pequeña pausa antes de permitir otro
-                setTimeout(() => { isProcessing = false; lastScannedCode = null; }, 2000);
+                // Existe: Abrimos modal PRE-LLENADO para confirmar/actualizar
+                openModal(decodedText, product.name, product.price, true);
             } else {
-                // NO EXISTE: Abrimos el formulario HTML (No prompt)
-                openModal(decodedText);
-                // Nota: isProcessing se queda en true hasta que cierren el modal
+                // No existe: Abrimos modal VACÍO
+                openModal(decodedText, "", "", false);
             }
         } catch (err) {
             console.error(err);
-            showToast("Error de conexión", false);
-            isProcessing = false;
+            isProcessing = false; // Liberar si hay error
         }
     }
 
-    // --- GESTIÓN DEL MODAL (FORMULARIO) ---
-    function openModal(barcode) {
-        currentBarcodeForModal = barcode;
-        document.getElementById('modal-barcode-display').innerText = `Código: ${barcode}`;
-        document.getElementById('inp-name').value = '';
-        document.getElementById('inp-price').value = '';
-        document.getElementById('new-product-modal').style.display = 'block';
-        document.getElementById('inp-name').focus();
+    // --- LÓGICA DEL FORMULARIO (MODAL) ---
+    function openModal(code, name, price, exists) {
+        currentBarcode = code;
+        document.getElementById('modal-barcode').innerText = code;
+        
+        document.getElementById('inp-name').value = name;
+        document.getElementById('inp-price').value = price;
+        
+        // UX: Si existe, mostramos una etiqueta azul
+        document.getElementById('history-badge').style.display = exists ? 'block' : 'none';
+        
+        document.getElementById('product-modal').style.display = 'block';
+        
+        // Si ya tiene precio, enfocamos el botón de confirmar para ir rápido
+        // Si es nuevo, enfocamos el nombre
+        if(exists) document.querySelector('.btn-confirm').focus();
+        else document.getElementById('inp-name').focus();
     }
 
     function closeModal() {
-        document.getElementById('new-product-modal').style.display = 'none';
-        // Liberamos el scanner
+        document.getElementById('product-modal').style.display = 'none';
+        // Liberamos el scanner después de un segundo para evitar rebotes
         setTimeout(() => { isProcessing = false; lastScannedCode = null; }, 1000);
     }
 
-    async function saveNewProduct() {
+    async function saveAndAdd() {
         const name = document.getElementById('inp-name').value;
         const price = parseInt(document.getElementById('inp-price').value);
 
         if (!name || isNaN(price)) {
-            showToast("⚠️ Ingresa nombre y precio válido", false);
+            showToast("⚠️ Falta nombre o precio");
             return;
         }
 
-        showToast("💾 Guardando...", false);
-
-        // Guardar en Supabase
+        // 1. Guardar/Actualizar en Nube (UPSERT)
+        // Upsert funciona así: Si el código existe, actualiza el precio. Si no, lo crea.
         const { error } = await db
             .from('products')
-            .insert([{ barcode: currentBarcodeForModal, name: name, price: price }]);
+            .upsert({ barcode: currentBarcode, name: name, price: price });
 
         if (!error) {
+            // 2. Agregar al carrito visual
             addToCart(name, price);
-            showToast("✅ Guardado y Agregado", true);
+            showToast("✅ Producto agregado");
             closeModal();
         } else {
-            showToast("Error al guardar", false);
+            showToast("Error al guardar: " + error.message);
         }
     }
 
@@ -209,18 +190,16 @@
         li.className = 'product-item';
         li.innerHTML = `
             <div>
-                <span style="font-weight:500">${name}</span><br>
-                <small style="color:#666">$${price}</small>
+                <strong>${name}</strong><br>
+                <small>$${price}</small>
             </div>
-            <button class="btn-delete" onclick="removeFromCart(this, ${price})">×</button>
+            <button class="btn-delete" onclick="removeFromCart(this, ${price})">🗑️</button>
         `;
         ul.insertBefore(li, ul.firstChild);
     }
 
     function removeFromCart(btn, price) {
-        // Confirmación simple (esta no suele congelar, pero si prefieres quítala)
-        if(!confirm("¿Quitar?")) return; 
-        
+        if(!confirm("¿Borrar del carrito?")) return;
         total -= price;
         if(total < 0) total = 0;
         updateTotalDisplay();
@@ -231,49 +210,32 @@
         document.getElementById('total-amount').innerText = '$' + total.toLocaleString();
     }
 
-    // --- UTILIDADES ---
-    function showToast(msg, isSuccess) {
+    function showToast(msg) {
         const x = document.getElementById("toast");
         x.innerText = msg;
         x.className = "show";
-        if(isSuccess) x.style.backgroundColor = "#2e7d32";
-        else x.style.backgroundColor = "#333";
-        
         setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
     }
 
     function startScanner() {
         try {
             const html5QrCode = new Html5Qrcode("reader");
-            
-            // CONFIGURACIÓN OPTIMIZADA PARA BARRAS
             const config = { 
                 fps: 10, 
-                // El cuadro de escaneo es rectangular (más ancho que alto) para encajar con códigos de barra
-                qrbox: { width: 250, height: 150 }, 
-                // Importante: Le decimos que NO busque todos los formatos, solo los de super
-                formatsToSupport: [ 
-                    Html5QrcodeSupportedFormats.EAN_13, 
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.UPC_E
-                ]
+                qrbox: { width: 250, height: 150 },
+                formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ]
             };
             
-            // Usamos la cámara trasera
             html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
             .then(() => {
                 document.getElementById('start-btn').style.display = 'none';
-                showToast("Cámara activa. Apunta a un código.", true);
             })
             .catch(err => {
-                // Si falla la trasera, intenta con cualquier cámara
-                console.warn("Fallo cámara trasera, intentando default...", err);
+                // Fallback si falla la trasera
                 html5QrCode.start({ facingMode: "user" }, config, onScanSuccess);
             });
-
         } catch (e) {
-            alert("Error crítico cámara: " + e);
+            alert("Error: " + e);
         }
     }
 </script>
