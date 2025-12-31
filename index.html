@@ -2,173 +2,246 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Supermercado Real</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner Pro</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
-        header { background-color: #2e7d32; color: white; padding: 15px; text-align: center; }
-        #scanner-container { width: 100%; max-width: 500px; margin: 0 auto; background: black; }
-        .dashboard { padding: 15px; max-width: 500px; margin: 0 auto; }
-        .total-box { background-color: #fff; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;}
-        .total-price { font-size: 2rem; font-weight: bold; color: #2e7d32; }
-        .product-item { background: white; border-bottom: 1px solid #eee; padding: 10px; display: flex; justify-content: space-between; }
-        button { padding: 10px 20px; background-color: #2e7d32; color: white; border: none; border-radius: 5px; width: 100%; margin-top: 10px;}
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; }
+        
+        /* HEADER */
+        header { background-color: #2e7d32; color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        h1 { margin: 0; font-size: 1.2rem; }
+
+        /* CÁMARA */
+        #scanner-container { width: 100%; height: 300px; background: black; position: relative; overflow: hidden; }
+        #reader { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* CONTROLES */
+        .dashboard { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
+        
+        .btn-main { width: 100%; padding: 15px; background-color: #2e7d32; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; margin-bottom: 15px; cursor: pointer; }
+        .btn-delete { background: #e53935; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 1.2rem; margin-left: 10px; }
+
+        /* TOTAL */
+        .total-box { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .total-price { font-size: 2.5rem; font-weight: 800; color: #2e7d32; margin-top: 5px; }
+
+        /* LISTA */
+        .product-list { list-style: none; padding: 0; }
+        .product-item { background: white; border-bottom: 1px solid #f0f0f0; padding: 15px; display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.3s ease; }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- MODAL PARA NUEVO PRODUCTO (Overlay) --- */
+        #new-product-modal {
+            display: none; /* Oculto por defecto */
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; padding: 20px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+            border-radius: 20px 20px 0 0;
+            z-index: 100;
+        }
+        .modal-title { font-weight: bold; margin-bottom: 15px; display: block; font-size: 1.1rem; }
+        .input-group { margin-bottom: 15px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; }
+        .modal-btns { display: flex; gap: 10px; }
+        .btn-save { flex: 1; background: #2e7d32; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; }
+        .btn-cancel { flex: 1; background: #ddd; color: #333; padding: 12px; border: none; border-radius: 8px; font-weight: bold; }
+
+        /* --- NOTIFICACIÓN TOAST --- */
+        #toast {
+            visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 101; left: 50%; bottom: 30px; font-size: 17px; opacity: 0; transition: opacity 0.5s, bottom 0.5s;
+        }
+        #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+        #toast.success { background-color: #2e7d32; }
     </style>
 </head>
 <body>
 
-<header><h1>🛒 Scanner Cloud</h1></header>
+<header><h1>🛒 Scanner Pro</h1></header>
 
 <div id="scanner-container">
-    <div id="reader" style="width: 100%;"></div>
+    <div id="reader"></div>
 </div>
 
 <div class="dashboard">
-    <button id="start-btn" onclick="startScanner()">📷 Iniciar Cámara</button>
-    <div id="status" style="text-align: center; margin: 10px; color: #666;">Listo para escanear...</div>
-
+    <button id="start-btn" class="btn-main" onclick="startScanner()">📷 Activar Cámara</button>
+    
     <div class="total-box">
-        <div>Total Estimado</div>
+        <small>Total Estimado</small>
         <div class="total-price" id="total-amount">$0</div>
     </div>
-    <ul id="cart-list" style="list-style: none; padding: 0;"></ul>
+
+    <h3>Tu Carrito:</h3>
+    <ul class="product-list" id="cart-list"></ul>
 </div>
 
+<div id="new-product-modal">
+    <span class="modal-title">🆕 Nuevo Producto Detectado</span>
+    <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px;" id="modal-barcode-display">Code: ...</div>
+    
+    <div class="input-group">
+        <input type="text" id="inp-name" placeholder="Nombre (ej: Arroz 1kg)">
+    </div>
+    <div class="input-group">
+        <input type="number" id="inp-price" placeholder="Precio (ej: 1200)" inputmode="numeric">
+    </div>
+    
+    <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        <button class="btn-save" onclick="saveNewProduct()">Guardar</button>
+    </div>
+</div>
+
+<div id="toast">Mensaje...</div>
+
 <script>
-    // --------------------------------------------------
-    // 1. PEGA TUS CLAVES AQUÍ DENTRO DE LAS COMILLAS ''
-    // --------------------------------------------------
+    // --- 1. TUS CLAVES DE SUPABASE ---
     const SUPABASE_URL = 'https://hviansyzbyzkfdmgujah.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_sfFASSOkI15dXpf5vulSRQ_f5EZTW4_';
-    // --------------------------------------------------
-
-    // Inicializamos la conexión (Usamos 'db' para evitar conflictos)
+    
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // ---------------------------------
 
     let total = 0;
     let lastScannedCode = null;
     let isProcessing = false;
+    let currentBarcodeForModal = null;
 
-    // Función para manejar el éxito del escaneo
+    // --- LÓGICA DE ESCANEO ---
     async function onScanSuccess(decodedText, decodedResult) {
-        if (isProcessing || decodedText === lastScannedCode) return;
-        
+        if (isProcessing) return; // Si estamos ocupados, ignorar escaneos
+
+        // Evitar re-escanear el mismo producto inmediatamente
+        if (decodedText === lastScannedCode) return;
+
         isProcessing = true;
         lastScannedCode = decodedText;
-        document.getElementById('status').innerText = "🔍 Buscando precio...";
+        showToast("🔍 Buscando...", false);
 
         try {
-            // Buscamos en la tabla 'products' usando la conexión 'db'
+            // Consultar Supabase
             let { data: product, error } = await db
                 .from('products')
                 .select('*')
                 .eq('barcode', decodedText)
-                .single(); // .single() nos da un objeto directo, no una lista
+                .single();
 
             if (product) {
-                // --- ESCENARIO: PRODUCTO EXISTE ---
+                // EXISTE: Agregamos directo y mostramos aviso verde
                 addToCart(product.name, product.price);
-                alert(`✅ Encontrado: ${product.name}`);
-            } else {
-                // --- ESCENARIO: PRODUCTO NUEVO ---
-                // El producto no está en la base de datos
-                let priceInput = prompt(`🆕 Producto Nuevo detectado (${decodedText}).\nIngrese el PRECIO:`);
+                showToast(`✅ ${product.name} agregado`, true);
                 
-                if (priceInput) {
-                    let nameInput = prompt("Ingrese el NOMBRE del producto:");
-                    let price = parseInt(priceInput);
-                    
-                    if (nameInput && !isNaN(price)) {
-                        // Guardamos en Supabase
-                        const { error: insertError } = await db
-                            .from('products')
-                            .insert([{ barcode: decodedText, name: nameInput, price: price }]);
-                        
-                        if (insertError) {
-                            alert("Error al guardar: " + insertError.message);
-                        } else {
-                            addToCart(nameInput, price);
-                            alert("¡Producto guardado para el futuro!");
-                        }
-                    }
-                }
+                // Pequeña pausa antes de permitir otro
+                setTimeout(() => { isProcessing = false; lastScannedCode = null; }, 2000);
+            } else {
+                // NO EXISTE: Abrimos el formulario HTML (No prompt)
+                openModal(decodedText);
+                // Nota: isProcessing se queda en true hasta que cierren el modal
             }
         } catch (err) {
             console.error(err);
-            alert("Ocurrió un error inesperado: " + err.message);
+            showToast("Error de conexión", false);
+            isProcessing = false;
         }
-
-        // Esperar 2 segundos antes de permitir otro escaneo
-        setTimeout(() => { 
-            isProcessing = false; 
-            lastScannedCode = null; 
-            document.getElementById('status').innerText = "Listo para escanear..."; 
-        }, 2000);
     }
 
-    // Función MEJORADA: Agrega botón de borrar
+    // --- GESTIÓN DEL MODAL (FORMULARIO) ---
+    function openModal(barcode) {
+        currentBarcodeForModal = barcode;
+        document.getElementById('modal-barcode-display').innerText = `Código: ${barcode}`;
+        document.getElementById('inp-name').value = '';
+        document.getElementById('inp-price').value = '';
+        document.getElementById('new-product-modal').style.display = 'block';
+        document.getElementById('inp-name').focus();
+    }
+
+    function closeModal() {
+        document.getElementById('new-product-modal').style.display = 'none';
+        // Liberamos el scanner
+        setTimeout(() => { isProcessing = false; lastScannedCode = null; }, 1000);
+    }
+
+    async function saveNewProduct() {
+        const name = document.getElementById('inp-name').value;
+        const price = parseInt(document.getElementById('inp-price').value);
+
+        if (!name || isNaN(price)) {
+            showToast("⚠️ Ingresa nombre y precio válido", false);
+            return;
+        }
+
+        showToast("💾 Guardando...", false);
+
+        // Guardar en Supabase
+        const { error } = await db
+            .from('products')
+            .insert([{ barcode: currentBarcodeForModal, name: name, price: price }]);
+
+        if (!error) {
+            addToCart(name, price);
+            showToast("✅ Guardado y Agregado", true);
+            closeModal();
+        } else {
+            showToast("Error al guardar", false);
+        }
+    }
+
+    // --- CARRITO ---
     function addToCart(name, price) {
-        // 1. Sumar al total
         total += price;
         updateTotalDisplay();
         
-        // 2. Crear el elemento visual
         const ul = document.getElementById('cart-list');
         const li = document.createElement('li');
         li.className = 'product-item';
-        
-        // Agregamos un ID único temporal para poder identificar este item si quisiéramos
         li.innerHTML = `
-            <div style="flex-grow: 1;">
-                <span>${name}</span><br>
-                <small style="color: #666;">$${price}</small>
+            <div>
+                <span style="font-weight:500">${name}</span><br>
+                <small style="color:#666">$${price}</small>
             </div>
-            <button onclick="removeFromCart(this, ${price})" style="width: auto; padding: 5px 10px; background: #e53935; margin: 0; margin-left: 10px;">
-                🗑️
-            </button>
+            <button class="btn-delete" onclick="removeFromCart(this, ${price})">×</button>
         `;
-        
-        // Insertar al principio de la lista
         ul.insertBefore(li, ul.firstChild);
     }
 
-    // NUEVA FUNCIÓN: Restar y borrar visualmente
-    function removeFromCart(buttonElement, price) {
-        if(!confirm("¿Borrar este producto del carrito?")) return;
-
-        // 1. Restar del total
+    function removeFromCart(btn, price) {
+        // Confirmación simple (esta no suele congelar, pero si prefieres quítala)
+        if(!confirm("¿Quitar?")) return; 
+        
         total -= price;
-        if (total < 0) total = 0; // Seguridad para que no de negativo
+        if(total < 0) total = 0;
         updateTotalDisplay();
-
-        // 2. Eliminar la línea visual (el padre del botón es el <li>)
-        const li = buttonElement.parentElement;
-        li.remove();
+        btn.parentElement.remove();
     }
 
-    // Función auxiliar para actualizar el texto del precio
     function updateTotalDisplay() {
         document.getElementById('total-amount').innerText = '$' + total.toLocaleString();
     }
 
+    // --- UTILIDADES ---
+    function showToast(msg, isSuccess) {
+        const x = document.getElementById("toast");
+        x.innerText = msg;
+        x.className = "show";
+        if(isSuccess) x.style.backgroundColor = "#2e7d32";
+        else x.style.backgroundColor = "#333";
+        
+        setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+    }
+
     function startScanner() {
-        // Agregamos un try-catch para avisarte si falla la cámara
         try {
-            document.getElementById('status').innerText = "Iniciando cámara...";
             const html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                { fps: 10, qrbox: 250 }, 
-                onScanSuccess
-            ).catch(err => {
-                alert("Error al abrir cámara: " + err);
-            });
+            const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
             
-            document.getElementById('start-btn').style.display = 'none';
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+            .then(() => {
+                document.getElementById('start-btn').style.display = 'none';
+            });
         } catch (e) {
-            alert("Error crítico al iniciar: " + e.message);
+            alert("Error cámara: " + e);
         }
     }
 </script>
