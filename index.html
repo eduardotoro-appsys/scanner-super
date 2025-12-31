@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Precios Pro V13</title>
+    <title>Scanner Precios Pro V14</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -296,6 +296,23 @@
     // ORDEN DE APARICIÓN EN LA LISTA
     const CAT_ORDER = ["frutas", "carnes", "lacteos", "panaderia", "despensa", "bebidas", "alcohol", "snack", "aseo", "personal", "mascotas", "hogar", "otros"];
 
+    // CLAVES DE ALMACENAMIENTO
+    const CACHE_KEY = 'scanner_pro_products';
+    const QUEUE_KEY = 'scanner_pro_queue';
+    const CART_KEY = 'scanner_pro_cart_session'; // <--- NUEVA CLAVE PARA EL CARRITO
+
+    // --- CARGAR CARRITO AL INICIO ---
+    function loadCartFromLocal() {
+        const savedCart = localStorage.getItem(CART_KEY);
+        if (savedCart) {
+            cart = JSON.parse(savedCart);
+            renderCart();
+            // Restaurar también la tienda si es posible, pero por ahora asumimos la default o la que elija el usuario
+        }
+    }
+    // Llamar al inicio
+    loadCartFromLocal();
+
     // --- LÓGICA OFFLINE ---
     window.addEventListener('online', () => { isOnline = true; updateConnectionStatus(); syncOfflineData(); showToast("Conexión restaurada 🌐", "success"); });
     window.addEventListener('offline', () => { isOnline = false; updateConnectionStatus(); showToast("Modo Offline activado 📡", "normal"); });
@@ -308,9 +325,6 @@
         else { header.classList.add('offline'); badge.style.display = 'inline-block'; }
     }
     
-    const CACHE_KEY = 'scanner_pro_products';
-    const QUEUE_KEY = 'scanner_pro_queue';
-
     function getLocalCache() { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
     function saveToLocalCache(product) {
         const cache = getLocalCache();
@@ -479,6 +493,7 @@
             subtotal: product.price * qty
         };
         cart.push(cartItem);
+        saveCartToLocal(); // <--- GUARDAR EN DISCO
         renderCart();
     }
 
@@ -487,6 +502,7 @@
         if(!confirm("¿Borrar item?")) return;
         // Filtramos para quitar el item
         cart = cart.filter(item => item.id !== id);
+        saveCartToLocal(); // <--- GUARDAR EN DISCO
         renderCart();
     }
 
@@ -494,9 +510,15 @@
         if(cart.length === 0) return;
         if(confirm("¿Vaciar carrito?")) {
             cart = [];
+            saveCartToLocal(); // <--- GUARDAR EN DISCO
             renderCart();
             showToast("Carrito vaciado");
         }
+    }
+    
+    // Función para guardar el carrito en LocalStorage
+    function saveCartToLocal() {
+        localStorage.setItem(CART_KEY, JSON.stringify(cart));
     }
 
     // RENDERIZADO DEL CARRITO CON GRUPOS
@@ -569,7 +591,12 @@
         }
     }
 
-    function handleStoreChange() { if(cart.length > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { clearCart(); } }
+    function handleStoreChange() { 
+        if(cart.length > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { 
+            clearCart(); 
+        } 
+    }
+    
     function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
     
     // Búsqueda Manual
