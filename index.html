@@ -86,6 +86,15 @@
             font-size: 1.1rem; box-sizing: border-box; margin-bottom: 15px; 
             -webkit-appearance: none;
         }
+        /* Estilo especial para el input del código de barras */
+        #modal-barcode {
+            font-family: monospace; font-size: 0.9rem; color: #666; 
+            background: #f9f9f9; margin-bottom: 10px;
+            border: 1px dashed #ccc;
+        }
+        #modal-barcode:disabled {
+            background: transparent; border: none; color: #333; padding: 0; margin-bottom: 10px;
+        }
         
         .modal-btns { display: flex; gap: 10px; margin-top: 10px; }
         .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; }
@@ -157,28 +166,28 @@
 <!-- MODAL 1: BÚSQUEDA MANUAL -->
 <div id="search-modal" class="modal">
     <div class="modal-header">
-        <strong>🔍 Buscar Producto</strong>
+        <strong>🔍 Buscar o Crear</strong>
     </div>
-    <input type="text" id="search-input" placeholder="Escribe el nombre (ej: Pan)..." onkeyup="handleSearchTyping(this.value)">
+    <input type="text" id="search-input" placeholder="Nombre o Código (ej: 780...)" onkeyup="handleSearchTyping(this.value)">
     
-    <ul id="search-results">
-        <!-- Resultados aquí -->
-    </ul>
+    <ul id="search-results"></ul>
 
     <button class="btn-main" id="btn-create-manual" style="display:none; background:#555;" onclick="createManualItem()">
-        ➕ Crear Nuevo: "<span id="manual-term"></span>"
+        ➕ Crear Nuevo
     </button>
     <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="closeAllModals()">Cerrar</button>
 </div>
 
-<!-- MODAL 2: EDICIÓN DE PRECIO (El de siempre) -->
+<!-- MODAL 2: EDICIÓN DE PRODUCTO -->
 <div id="product-modal" class="modal">
     <div class="modal-header">
-        <strong>📝 Validar Precio</strong>
+        <strong>📝 Detalle Producto</strong>
         <span id="store-badge" style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;"></span>
     </div>
     
-    <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px; font-family: monospace;" id="modal-barcode">...</div>
+    <!-- AHORA ES UN INPUT -->
+    <label style="font-size:0.8rem; color:#666;">Código de Barras:</label>
+    <input type="text" id="modal-barcode" placeholder="Código de barras" disabled>
     
     <input type="text" id="inp-name" placeholder="Nombre (ej: Coca Cola)" autocomplete="off">
     <input type="tel" id="inp-price" placeholder="Precio ($)" inputmode="numeric">
@@ -204,7 +213,6 @@
     let total = 0;
     let lastScannedCode = null;
     let isProcessing = false;
-    let currentBarcode = null;
     let html5QrCode = null;
 
     // --- 1. LÓGICA DE ESCANEO ---
@@ -212,25 +220,29 @@
         if (isProcessing || decodedText === lastScannedCode) return;
         isProcessing = true;
         lastScannedCode = decodedText;
-        stopScanner(); // Detenemos cámara al encontrar algo para ahorrar batería y limpiar UI
-        checkProductInDB(decodedText);
+        stopScanner();
+        // Al escanear, el código NO debe ser editable para evitar errores
+        checkProductInDB(decodedText, false);
     }
 
-    async function checkProductInDB(code) {
+    async function checkProductInDB(code, isManualCreation) {
         const currentStore = document.getElementById('store-select').value;
-        showToast(`🔍 Buscando...`);
+        if(!isManualCreation) showToast(`🔍 Buscando...`);
 
         try {
             // A. Buscar en tienda actual
             let { data: product } = await db.from('products').select('*').eq('barcode', code).eq('store', currentStore).single();
 
             if (product) {
-                openProductModal(code, product.name, product.price, currentStore);
+                // Si existe, abrimos modal (código NO editable si viene del escáner)
+                openProductModal(code, product.name, product.price, currentStore, false);
             } else {
-                // B. Buscar nombre en otras tiendas
+                // B. Si no existe, buscamos nombre sugerido
                 let { data: other } = await db.from('products').select('name').eq('barcode', code).limit(1).maybeSingle();
                 const suggested = other ? other.name : "";
-                openProductModal(code, suggested, "", currentStore);
+                
+                // Si es creación manual, permitimos editar el código. Si es escaneo, no.
+                openProductModal(code, suggested, "", currentStore, isManualCreation);
             }
         } catch (err) {
             console.error(err);
@@ -251,11 +263,15 @@
 
     let debounceTimer;
     function handleSearchTyping(text) {
-        document.getElementById('manual-term').innerText = text;
         const btnCreate = document.getElementById('btn-create-manual');
-        
-        if(text.length > 0) btnCreate.style.display = 'block';
-        else btnCreate.style.display = 'none';
+        if(text.length > 0) {
+            btnCreate.style.display = 'block';
+            // Cambiar texto del botón según si parece código o nombre
+            const isNumeric = /^\d+$/.test(text);
+            btnCreate.innerText = isNumeric ? `➕ Registrar Código: ${text}` : `➕ Crear Nuevo: "${text}"`;
+        } else {
+            btnCreate.style.display = 'none';
+        }
 
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => searchInDB(text), 500);
@@ -263,15 +279,18 @@
 
     async function searchInDB(text) {
         if(text.length < 2) return;
-        const currentStore = document.getElementById('store-select').value;
         
-        // Buscar productos parecidos (case insensitive)
-        let { data: results } = await db
-            .from('products')
-            .select('*')
-            .ilike('name', `%${text}%`)
-            .limit(5);
+        // Buscamos por nombre O por código exacto
+        let query = db.from('products').select('*').limit(5);
+        
+        // Si es solo números, buscamos match exacto de código, si no, nombre parcial
+        if (/^\d+$/.test(text)) {
+            query = query.eq('barcode', text);
+        } else {
+            query = query.ilike('name', `%${text}%`);
+        }
 
+        let { data: results } = await query;
         const list = document.getElementById('search-results');
         list.innerHTML = '';
 
@@ -282,14 +301,13 @@
                 li.innerHTML = `<span>${p.name}</span> <b>$${p.price}</b>`;
                 li.onclick = () => {
                     closeAllModals();
-                    // Simulamos que lo escaneamos para abrir el modal de validación
-                    // Usamos el código original del producto encontrado
-                    openProductModal(p.barcode, p.name, p.price, p.store); 
+                    // Al abrir uno existente, NO permitimos editar el código
+                    openProductModal(p.barcode, p.name, p.price, p.store, false); 
                 };
                 list.appendChild(li);
             });
         } else {
-            list.innerHTML = '<li style="padding:10px; color:#666;">Sin resultados previos.</li>';
+            list.innerHTML = '<li style="padding:10px; color:#666;">Sin resultados.</li>';
         }
     }
 
@@ -297,19 +315,45 @@
         const text = document.getElementById('search-input').value;
         if(!text) return;
         closeAllModals();
-        // Generamos un código falso único: MAN-Fecha
-        const manualCode = 'MAN-' + Date.now();
+        
         const currentStore = document.getElementById('store-select').value;
-        openProductModal(manualCode, text, "", currentStore);
+        const isNumeric = /^\d+$/.test(text);
+
+        let code, name;
+        
+        if (isNumeric) {
+            // Si el usuario escribió números, asumimos que ESO es el código de barras
+            code = text;
+            name = "";
+        } else {
+            // Si escribió texto, generamos código temporal
+            code = 'MAN-' + Date.now();
+            name = text;
+        }
+
+        // Abrimos modal permitiendo EDITAR el código (true)
+        openProductModal(code, name, "", currentStore, true);
     }
 
     // --- 3. MODAL DE PRODUCTO (Edición) ---
-    function openProductModal(code, name, price, store) {
-        currentBarcode = code;
+    function openProductModal(code, name, price, store, isEditableBarcode) {
         document.getElementById('overlay-bg').style.display = 'block';
         document.getElementById('product-modal').style.display = 'block';
         
-        document.getElementById('modal-barcode').innerText = code;
+        // Configurar campo de código
+        const barcodeInput = document.getElementById('modal-barcode');
+        barcodeInput.value = code;
+        barcodeInput.disabled = !isEditableBarcode; // Activar o desactivar según el caso
+        
+        // Foco visual si está habilitado
+        if(isEditableBarcode) {
+            barcodeInput.style.border = "1px solid #2e7d32";
+            barcodeInput.style.backgroundColor = "#fff";
+        } else {
+            barcodeInput.style.border = "1px dashed #ccc";
+            barcodeInput.style.backgroundColor = "#f9f9f9";
+        }
+
         document.getElementById('inp-name').value = name;
         document.getElementById('inp-price').value = price;
         document.getElementById('store-badge').innerText = store.toUpperCase();
@@ -332,10 +376,21 @@
         const name = document.getElementById('inp-name').value;
         const price = parseInt(document.getElementById('inp-price').value);
         const store = document.getElementById('store-select').value;
+        
+        // IMPORTANTE: Leemos el código del input, por si el usuario lo editó
+        const finalBarcode = document.getElementById('modal-barcode').value.trim();
 
-        if (!name || isNaN(price)) { showToast("⚠️ Faltan datos", "alert"); return; }
+        if (!name || isNaN(price) || !finalBarcode) { 
+            showToast("⚠️ Faltan datos", "alert"); 
+            return; 
+        }
 
-        const { error } = await db.from('products').upsert({ barcode: currentBarcode, store: store, name: name, price: price });
+        const { error } = await db.from('products').upsert({ 
+            barcode: finalBarcode, 
+            store: store, 
+            name: name, 
+            price: price 
+        });
 
         if (!error) {
             addToCart(name, price);
@@ -372,7 +427,7 @@
     function updateTotalDisplay() { document.getElementById('total-amount').innerText = '$' + total.toLocaleString(); }
     function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
 
-    // --- 6. CÁMARA (Lógica mejorada de inicio/fin) ---
+    // --- 6. CÁMARA ---
     function startScanner() {
         document.getElementById('scanner-container').style.display = 'block';
         html5QrCode = new Html5Qrcode("reader");
