@@ -50,11 +50,34 @@
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         
+        /* CAJA DE TOTAL CON ALERTA DE PRESUPUESTO */
         .total-box { 
             background: white; padding: 20px; border-radius: 12px; text-align: center; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; border: 2px solid transparent;
+            transition: all 0.3s ease;
         }
-        .total-price { font-size: 2.5rem; font-weight: 800; color: #2e7d32; margin-top: 5px; }
+        .total-price { font-size: 2.5rem; font-weight: 800; color: #2e7d32; margin-top: 5px; transition: color 0.3s; }
+        
+        /* Estilos de Alerta */
+        .total-price.warning { color: #f57c00; } /* Naranja: Cerca del límite */
+        .total-price.danger { color: #d32f2f; animation: pulse 1s infinite; } /* Rojo: Pasado */
+        .total-box.danger { border-color: #d32f2f; background-color: #ffebee; }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Input de Meta */
+        .budget-control { 
+            margin-top: 15px; padding-top: 10px; border-top: 1px dashed #eee;
+            display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; color: #555;
+        }
+        .budget-input {
+            width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; 
+            text-align: center; font-size: 1rem; color: #333; margin-bottom: 0; font-weight: bold;
+        }
 
         .product-list { list-style: none; padding: 0; }
         .product-item { 
@@ -155,6 +178,12 @@
     <div class="total-box">
         <small>Total Carrito</small>
         <div class="total-price" id="total-amount">$0</div>
+        
+        <!-- CONTROL DE PRESUPUESTO NUEVO -->
+        <div class="budget-control">
+            <span>🎯 Meta Máxima: $</span>
+            <input type="number" class="budget-input" id="budget-limit" placeholder="..." oninput="updateTotalDisplay()">
+        </div>
     </div>
 
     <ul class="product-list" id="cart-list"></ul>
@@ -172,7 +201,6 @@
     
     <ul id="search-results"></ul>
 
-    <!-- BOTÓN MEJORADO: Color azul vibrante, más margen y sombra -->
     <button class="btn-main" id="btn-create-manual" style="display:none; margin-top: 15px; background-color: #1976d2; box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3); width: 100%;" onclick="createManualItem()">
         ➕ Crear Nuevo
     </button>
@@ -187,7 +215,6 @@
         <span id="store-badge" style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;"></span>
     </div>
     
-    <!-- AHORA ES UN INPUT -->
     <label style="font-size:0.8rem; color:#666;">Código de Barras:</label>
     <input type="text" id="modal-barcode" placeholder="Código de barras" disabled>
     
@@ -223,7 +250,6 @@
         isProcessing = true;
         lastScannedCode = decodedText;
         stopScanner();
-        // Al escanear, el código NO debe ser editable para evitar errores
         checkProductInDB(decodedText, false);
     }
 
@@ -232,18 +258,13 @@
         if(!isManualCreation) showToast(`🔍 Buscando...`);
 
         try {
-            // A. Buscar en tienda actual
             let { data: product } = await db.from('products').select('*').eq('barcode', code).eq('store', currentStore).single();
 
             if (product) {
-                // Si existe, abrimos modal (código NO editable si viene del escáner)
                 openProductModal(code, product.name, product.price, currentStore, false);
             } else {
-                // B. Si no existe, buscamos nombre sugerido
                 let { data: other } = await db.from('products').select('name').eq('barcode', code).limit(1).maybeSingle();
                 const suggested = other ? other.name : "";
-                
-                // Si es creación manual, permitimos editar el código. Si es escaneo, no.
                 openProductModal(code, suggested, "", currentStore, isManualCreation);
             }
         } catch (err) {
@@ -268,7 +289,6 @@
         const btnCreate = document.getElementById('btn-create-manual');
         if(text.length > 0) {
             btnCreate.style.display = 'block';
-            // Cambiar texto del botón según si parece código o nombre
             const isNumeric = /^\d+$/.test(text);
             btnCreate.innerText = isNumeric ? `➕ Registrar Código: ${text}` : `➕ Crear Nuevo: "${text}"`;
         } else {
@@ -276,19 +296,14 @@
         }
 
         clearTimeout(debounceTimer);
-        // REDUCIDO: de 500ms a 300ms para mayor velocidad
         debounceTimer = setTimeout(() => searchInDB(text), 300);
     }
 
     async function searchInDB(text) {
         if(text.length < 2) return;
         
-        // Buscamos por nombre O por código exacto
         let query = db.from('products').select('*').limit(5);
-        
-        // MODIFICADO: Ahora usa 'ilike' con '%' al final para códigos también (starts with)
         if (/^\d+$/.test(text)) {
-            // Buscar códigos que COMIENCEN con lo escrito
             query = query.ilike('barcode', `${text}%`);
         } else {
             query = query.ilike('name', `%${text}%`);
@@ -302,7 +317,6 @@
             results.forEach(p => {
                 const li = document.createElement('li');
                 li.className = 'search-result-item';
-                // Añadimos el código en pequeñito para saber cuál es
                 li.innerHTML = `
                     <div style="display:flex; flex-direction:column;">
                         <span>${p.name}</span>
@@ -312,7 +326,6 @@
                 `;
                 li.onclick = () => {
                     closeAllModals();
-                    // Al abrir uno existente, NO permitimos editar el código
                     openProductModal(p.barcode, p.name, p.price, p.store, false); 
                 };
                 list.appendChild(li);
@@ -331,32 +344,24 @@
         const isNumeric = /^\d+$/.test(text);
 
         let code, name;
-        
         if (isNumeric) {
-            // Si el usuario escribió números, asumimos que ESO es el código de barras
-            code = text;
-            name = "";
+            code = text; name = "";
         } else {
-            // Si escribió texto, generamos código temporal
-            code = 'MAN-' + Date.now();
-            name = text;
+            code = 'MAN-' + Date.now(); name = text;
         }
 
-        // Abrimos modal permitiendo EDITAR el código (true)
         openProductModal(code, name, "", currentStore, true);
     }
 
-    // --- 3. MODAL DE PRODUCTO (Edición) ---
+    // --- 3. MODAL DE PRODUCTO ---
     function openProductModal(code, name, price, store, isEditableBarcode) {
         document.getElementById('overlay-bg').style.display = 'block';
         document.getElementById('product-modal').style.display = 'block';
         
-        // Configurar campo de código
         const barcodeInput = document.getElementById('modal-barcode');
         barcodeInput.value = code;
-        barcodeInput.disabled = !isEditableBarcode; // Activar o desactivar según el caso
+        barcodeInput.disabled = !isEditableBarcode;
         
-        // Foco visual si está habilitado
         if(isEditableBarcode) {
             barcodeInput.style.border = "1px solid #2e7d32";
             barcodeInput.style.backgroundColor = "#fff";
@@ -387,21 +392,13 @@
         const name = document.getElementById('inp-name').value;
         const price = parseInt(document.getElementById('inp-price').value);
         const store = document.getElementById('store-select').value;
-        
-        // IMPORTANTE: Leemos el código del input, por si el usuario lo editó
         const finalBarcode = document.getElementById('modal-barcode').value.trim();
 
         if (!name || isNaN(price) || !finalBarcode) { 
-            showToast("⚠️ Faltan datos", "alert"); 
-            return; 
+            showToast("⚠️ Faltan datos", "alert"); return; 
         }
 
-        const { error } = await db.from('products').upsert({ 
-            barcode: finalBarcode, 
-            store: store, 
-            name: name, 
-            price: price 
-        });
+        const { error } = await db.from('products').upsert({ barcode: finalBarcode, store: store, name: name, price: price });
 
         if (!error) {
             addToCart(name, price);
@@ -435,7 +432,35 @@
             total = 0; updateTotalDisplay(); document.getElementById('cart-list').innerHTML = "";
         }
     }
-    function updateTotalDisplay() { document.getElementById('total-amount').innerText = '$' + total.toLocaleString(); }
+
+    // --- ACTUALIZACIÓN DE TOTAL CON ALERTA ---
+    function updateTotalDisplay() { 
+        const amountEl = document.getElementById('total-amount');
+        const boxEl = document.querySelector('.total-box');
+        const limitInput = document.getElementById('budget-limit').value;
+        
+        amountEl.innerText = '$' + total.toLocaleString();
+        
+        // Resetear estilos
+        amountEl.className = 'total-price';
+        boxEl.className = 'total-box';
+        
+        // Verificar meta
+        if (limitInput && parseInt(limitInput) > 0) {
+            const limit = parseInt(limitInput);
+            
+            if (total > limit) {
+                // Pasado del límite
+                amountEl.classList.add('danger');
+                boxEl.classList.add('danger');
+                if(navigator.vibrate) navigator.vibrate([200, 100, 200]); // Vibración fuerte
+            } else if (total > limit * 0.9) {
+                // Al 90% del límite
+                amountEl.classList.add('warning');
+            }
+        }
+    }
+    
     function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
 
     // --- 6. CÁMARA ---
