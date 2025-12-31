@@ -37,59 +37,75 @@
 </div>
 
 <script>
-    // --- CONFIGURACIÓN DE SUPABASE (¡CAMBIA ESTO!) ---
+    // --------------------------------------------------
+    // 1. PEGA TUS CLAVES AQUÍ DENTRO DE LAS COMILLAS ''
+    // --------------------------------------------------
     const SUPABASE_URL = 'https://hviansyzbyzkfdmgujah.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_sfFASSOkI15dXpf5vulSRQ_f5EZTW4_';
-    
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     // --------------------------------------------------
+
+    // Inicializamos la conexión (Usamos 'db' para evitar conflictos)
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let total = 0;
     let lastScannedCode = null;
     let isProcessing = false;
 
+    // Función para manejar el éxito del escaneo
     async function onScanSuccess(decodedText, decodedResult) {
         if (isProcessing || decodedText === lastScannedCode) return;
         
         isProcessing = true;
         lastScannedCode = decodedText;
-        document.getElementById('status').innerText = "Buscando precio...";
+        document.getElementById('status').innerText = "🔍 Buscando precio...";
 
         try {
-            // 1. Buscar en Supabase
-            let { data: products, error } = await supabase
+            // Buscamos en la tabla 'products' usando la conexión 'db'
+            let { data: product, error } = await db
                 .from('products')
                 .select('*')
                 .eq('barcode', decodedText)
-                .single();
+                .single(); // .single() nos da un objeto directo, no una lista
 
-            if (products) {
-                // PRODUCTO EXISTE
-                addToCart(products.name, products.price);
-                alert(`✅ Encontrado: ${products.name} a $${products.price}`);
+            if (product) {
+                // --- ESCENARIO: PRODUCTO EXISTE ---
+                addToCart(product.name, product.price);
+                alert(`✅ Encontrado: ${product.name}`);
             } else {
-                // PRODUCTO NUEVO (No existe)
-                let priceInput = prompt(`Producto Nuevo (${decodedText}).\nIngrese el PRECIO:`);
+                // --- ESCENARIO: PRODUCTO NUEVO ---
+                // El producto no está en la base de datos
+                let priceInput = prompt(`🆕 Producto Nuevo detectado (${decodedText}).\nIngrese el PRECIO:`);
+                
                 if (priceInput) {
                     let nameInput = prompt("Ingrese el NOMBRE del producto:");
                     let price = parseInt(priceInput);
                     
                     if (nameInput && !isNaN(price)) {
-                        // Guardar en Supabase para el futuro
-                        await supabase.from('products').insert([
-                            { barcode: decodedText, name: nameInput, price: price }
-                        ]);
-                        addToCart(nameInput, price);
+                        // Guardamos en Supabase
+                        const { error: insertError } = await db
+                            .from('products')
+                            .insert([{ barcode: decodedText, name: nameInput, price: price }]);
+                        
+                        if (insertError) {
+                            alert("Error al guardar: " + insertError.message);
+                        } else {
+                            addToCart(nameInput, price);
+                            alert("¡Producto guardado para el futuro!");
+                        }
                     }
                 }
             }
         } catch (err) {
             console.error(err);
-            alert("Error de conexión");
+            alert("Ocurrió un error inesperado: " + err.message);
         }
 
-        // Pausa breve antes de permitir otro escaneo
-        setTimeout(() => { isProcessing = false; lastScannedCode = null; document.getElementById('status').innerText = "Listo..."; }, 2000);
+        // Esperar 2 segundos antes de permitir otro escaneo
+        setTimeout(() => { 
+            isProcessing = false; 
+            lastScannedCode = null; 
+            document.getElementById('status').innerText = "Listo para escanear..."; 
+        }, 2000);
     }
 
     function addToCart(name, price) {
@@ -104,9 +120,22 @@
     }
 
     function startScanner() {
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess);
-        document.getElementById('start-btn').style.display = 'none';
+        // Agregamos un try-catch para avisarte si falla la cámara
+        try {
+            document.getElementById('status').innerText = "Iniciando cámara...";
+            const html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                { fps: 10, qrbox: 250 }, 
+                onScanSuccess
+            ).catch(err => {
+                alert("Error al abrir cámara: " + err);
+            });
+            
+            document.getElementById('start-btn').style.display = 'none';
+        } catch (e) {
+            alert("Error crítico al iniciar: " + e.message);
+        }
     }
 </script>
 
