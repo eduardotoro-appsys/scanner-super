@@ -3,61 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Multi-Súper</title>
+    <title>Scanner Precios Pro</title>
     
+    <!-- Configuración PWA (Icono y Color) -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
+    <!-- Librerías Externas -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; }
+        /* --- ESTILOS GENERALES --- */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; }
         
-        /* HEADER CON SELECTOR */
-        header { background-color: #2e7d32; padding: 10px; display: flex; flex-direction: column; align-items: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        h1 { margin: 0; font-size: 1rem; color: white; margin-bottom: 5px; opacity: 0.8; }
+        /* HEADER FIJO */
+        header { 
+            background-color: #2e7d32; 
+            padding: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            position: sticky; top: 0; z-index: 10; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+        }
+        h1 { margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 5px; font-weight: normal; }
         
-        /* El selector de supermercado */
+        /* SELECTOR DE TIENDA */
         #store-select {
-            font-size: 1.1rem; padding: 8px; border-radius: 8px; border: none; font-weight: bold; width: 90%; max-width: 300px; text-align: center;
-            background: white; color: #2e7d32; outline: none;
+            font-size: 1.1rem; padding: 8px 12px; border-radius: 8px; border: none; 
+            font-weight: bold; width: 95%; max-width: 300px; text-align: center;
+            background: white; color: #2e7d32; outline: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        #scanner-container { width: 100%; background: black; min-height: 250px; position: relative; overflow: hidden;}
+        /* ÁREA DE CÁMARA */
+        #scanner-container { 
+            width: 100%; background: black; min-height: 250px; position: relative; overflow: hidden;
+        }
+        /* Ajuste para que el video no se recorte y se vea todo el campo de visión */
         #reader video { width: 100%; height: auto; object-fit: contain !important; }
         
+        /* CONTROLES Y LISTA */
         .dashboard { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
-        .btn-main { width: 100%; padding: 15px; background-color: #2e7d32; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; margin-bottom: 15px; cursor: pointer; }
         
-        .total-box { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .btn-main { 
+            width: 100%; padding: 15px; background-color: #2e7d32; color: white; 
+            border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; 
+            margin-bottom: 15px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        /* TOTAL CAJA */
+        .total-box { 
+            background: white; padding: 20px; border-radius: 12px; text-align: center; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; border: 1px solid #e0e0e0;
+        }
         .total-price { font-size: 2.5rem; font-weight: 800; color: #2e7d32; margin-top: 5px; }
 
+        /* LISTA DE PRODUCTOS */
         .product-list { list-style: none; padding: 0; }
-        .product-item { background: white; border-bottom: 1px solid #f0f0f0; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .btn-delete { background: #e53935; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin-left: 10px; }
+        .product-item { 
+            background: white; border-bottom: 1px solid #f0f0f0; padding: 15px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* MODAL */
-        #product-modal { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 25px 20px; border-radius: 20px 20px 0 0; z-index: 100; box-shadow: 0 -4px 30px rgba(0,0,0,0.3); }
-        input { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1.1rem; box-sizing: border-box; margin-bottom: 15px; }
+        .item-info { flex-grow: 1; }
+        .item-name { font-weight: 600; font-size: 1rem; display: block; }
+        .item-price { color: #666; font-size: 0.9rem; }
+        
+        .btn-delete { 
+            background: #ffcdd2; color: #c62828; border: none; padding: 8px 12px; 
+            border-radius: 6px; margin-left: 10px; cursor: pointer; font-size: 1.2rem;
+        }
+
+        /* MODAL (FORMULARIO) */
+        #product-modal { 
+            display: none; position: fixed; bottom: 0; left: 0; right: 0; 
+            background: white; padding: 25px 20px; border-radius: 20px 20px 0 0; 
+            z-index: 100; box-shadow: 0 -4px 30px rgba(0,0,0,0.3); 
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        input { 
+            width: 100%; padding: 15px; border: 1px solid #ccc; border-radius: 8px; 
+            font-size: 1.1rem; box-sizing: border-box; margin-bottom: 15px; 
+            -webkit-appearance: none; /* Fix iOS shadow */
+        }
+        
         .modal-btns { display: flex; gap: 10px; }
-        .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; }
+        .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; }
         .btn-cancel { flex: 1; background: #f5f5f5; color: #333; padding: 15px; border: none; border-radius: 8px; font-weight: bold; }
 
-        #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 101; left: 50%; bottom: 30px; opacity: 0; transition: opacity 0.5s, bottom 0.5s; }
+        /* NOTIFICACIÓN TOAST */
+        #toast { 
+            visibility: hidden; min-width: 250px; margin-left: -125px; 
+            background-color: #333; color: #fff; text-align: center; border-radius: 50px; 
+            padding: 16px; position: fixed; z-index: 101; left: 50%; bottom: 30px; 
+            opacity: 0; transition: opacity 0.5s, bottom 0.5s; font-weight: 500;
+        }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+        #toast.success { background-color: #2e7d32; }
+        #toast.alert { background-color: #d32f2f; }
+
+        /* FONDO OSCURO MODAL */
+        #overlay-bg {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.5); z-index: 90;
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>Estás comprando en:</h1>
-    <select id="store-select" onchange="resetCart()">
+    <h1>Estás en:</h1>
+    <select id="store-select" onchange="handleStoreChange()">
         <option value="lider">🔵 Lider</option>
         <option value="jumbo">🐘 Jumbo</option>
         <option value="unimarc">🔴 Unimarc</option>
         <option value="tottus">🟢 Tottus</option>
+        <option value="acuenta">🛒 aCuenta</option>
+        <option value="santa_isabel">🐼 Santa Isabel</option>
         <option value="mayorista">📦 Mayorista</option>
         <option value="otro">🏪 Almacén / Otro</option>
     </select>
@@ -75,18 +143,22 @@
         <div class="total-price" id="total-amount">$0</div>
     </div>
 
-    <ul class="product-list" id="cart-list"></ul>
+    <ul class="product-list" id="cart-list">
+        <!-- Los productos aparecerán aquí -->
+    </ul>
 </div>
 
+<!-- FONDO Y MODAL -->
+<div id="overlay-bg" onclick="closeModal()"></div>
 <div id="product-modal">
-    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+    <div class="modal-header">
         <strong>📝 Validar Precio</strong>
-        <span id="store-badge" style="background:#e3f2fd; color:#1565c0; padding:2px 6px; border-radius:4px; font-size:0.8rem;"></span>
+        <span id="store-badge" style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;"></span>
     </div>
     
-    <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px;" id="modal-barcode">...</div>
+    <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px; font-family: monospace;" id="modal-barcode">...</div>
     
-    <input type="text" id="inp-name" placeholder="Nombre (ej: Coca Cola)">
+    <input type="text" id="inp-name" placeholder="Nombre (ej: Coca Cola)" autocomplete="off">
     <input type="tel" id="inp-price" placeholder="Precio ($)" inputmode="numeric">
     
     <div class="modal-btns">
@@ -98,10 +170,12 @@
 <div id="toast">Mensaje...</div>
 
 <script>
-    // --- CLAVES SUPABASE ---
+    // ==========================================
+    // ⚠️ IMPORTANTE: PEGA TUS CLAVES AQUÍ ABAJO
+    // ==========================================
     const SUPABASE_URL = 'https://hviansyzbyzkfdmgujah.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_sfFASSOkI15dXpf5vulSRQ_f5EZTW4_';
-    // -----------------------
+    // ==========================================
     
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -110,39 +184,37 @@
     let isProcessing = false;
     let currentBarcode = null;
 
-    // --- ESCANEO INTELIGENTE ---
+    // --- 1. LÓGICA DE ESCANEO ---
     async function onScanSuccess(decodedText) {
         if (isProcessing || decodedText === lastScannedCode) return;
         
         isProcessing = true;
         lastScannedCode = decodedText;
         
-        // 1. OBTENER SUPERMERCADO ACTUAL
         const currentStore = document.getElementById('store-select').value;
         showToast(`🔍 Buscando en ${currentStore.toUpperCase()}...`);
 
         try {
-            // 2. BUSCAR PRECIO SOLO EN ESTE SUPERMERCADO
+            // A. Buscar precio en la tienda actual
             let { data: product } = await db
                 .from('products')
                 .select('*')
                 .eq('barcode', decodedText)
-                .eq('store', currentStore) // <--- FILTRO IMPORTANTE
+                .eq('store', currentStore)
                 .single();
 
             if (product) {
-                // Existe en este súper: Abrir con precio conocido
+                // Existe en esta tienda -> Modal con precio lleno
                 openModal(decodedText, product.name, product.price, currentStore);
             } else {
-                // No existe en este súper: Intentar buscar el nombre en otros (para no escribirlo de nuevo)
+                // B. No existe en esta tienda -> ¿Existe en otra? (Para robar el nombre)
                 let { data: otherStoreProduct } = await db
                     .from('products')
                     .select('name')
                     .eq('barcode', decodedText)
                     .limit(1)
-                    .maybeSingle(); // maybeSingle no da error si no encuentra nada
+                    .maybeSingle();
                 
-                // Si existe en otro lado, usamos ese nombre, si no, vacío.
                 const suggestedName = otherStoreProduct ? otherStoreProduct.name : "";
                 openModal(decodedText, suggestedName, "", currentStore);
             }
@@ -150,10 +222,11 @@
         } catch (err) {
             console.error(err);
             isProcessing = false;
+            showToast("Error de red o base de datos", "alert");
         }
     }
 
-    // --- FORMULARIO ---
+    // --- 2. GESTIÓN DEL MODAL ---
     function openModal(code, name, price, store) {
         currentBarcode = code;
         document.getElementById('modal-barcode').innerText = code;
@@ -161,83 +234,126 @@
         document.getElementById('inp-price').value = price;
         document.getElementById('store-badge').innerText = store.toUpperCase();
         
+        // Mostrar Modal y Fondo
         document.getElementById('product-modal').style.display = 'block';
+        document.getElementById('overlay-bg').style.display = 'block';
         
         // Foco inteligente
-        if(price) document.querySelector('.btn-confirm').focus();
-        else if(name) document.getElementById('inp-price').focus();
-        else document.getElementById('inp-name').focus();
+        if(price) document.querySelector('.btn-confirm').focus(); // Si hay precio, listo para guardar
+        else if(name) document.getElementById('inp-price').focus(); // Si hay nombre, directo al precio
+        else document.getElementById('inp-name').focus(); // Si es nuevo, al nombre
     }
 
     function closeModal() {
         document.getElementById('product-modal').style.display = 'none';
+        document.getElementById('overlay-bg').style.display = 'none';
+        // Liberar escáner tras breve pausa
         setTimeout(() => { isProcessing = false; lastScannedCode = null; }, 1000);
     }
 
+    // --- 3. GUARDAR DATOS ---
     async function saveAndAdd() {
         const name = document.getElementById('inp-name').value;
         const price = parseInt(document.getElementById('inp-price').value);
         const store = document.getElementById('store-select').value;
 
-        if (!name || isNaN(price)) { showToast("⚠️ Faltan datos"); return; }
+        if (!name || isNaN(price)) { 
+            showToast("⚠️ Faltan datos (Nombre o Precio)", "alert"); 
+            return; 
+        }
 
-        // GUARDAR: Incluyendo la tienda
+        // Upsert: Crea o Actualiza
         const { error } = await db
             .from('products')
             .upsert({ 
                 barcode: currentBarcode, 
-                store: store,    // <--- CLAVE NUEVA
+                store: store,    
                 name: name, 
                 price: price 
             });
 
         if (!error) {
             addToCart(name, price);
-            showToast("✅ Guardado en " + store);
+            showToast(`✅ ${name} agregado`, "success");
             closeModal();
         } else {
-            showToast("Error: " + error.message);
+            showToast("Error al guardar: " + error.message, "alert");
         }
     }
 
-    // --- CARRITO ---
+    // --- 4. CARRITO ---
     function addToCart(name, price) {
         total += price;
         updateTotalDisplay();
+        
         const ul = document.getElementById('cart-list');
         const li = document.createElement('li');
         li.className = 'product-item';
-        li.innerHTML = `<div><strong>${name}</strong><br><small>$${price}</small></div><button class="btn-delete" onclick="removeFromCart(this, ${price})">🗑️</button>`;
+        li.innerHTML = `
+            <div class="item-info">
+                <span class="item-name">${name}</span>
+                <span class="item-price">$${price.toLocaleString()}</span>
+            </div>
+            <button class="btn-delete" onclick="removeFromCart(this, ${price})">×</button>
+        `;
+        // Insertar al inicio
         ul.insertBefore(li, ul.firstChild);
     }
 
     function removeFromCart(btn, price) {
-        total -= price; if(total < 0) total = 0;
+        // Vibración pequeña si el cel lo soporta
+        if(navigator.vibrate) navigator.vibrate(50);
+        
+        total -= price; 
+        if(total < 0) total = 0;
         updateTotalDisplay();
         btn.parentElement.remove();
     }
 
-    function resetCart() {
-        // Opcional: Limpiar carrito al cambiar de súper
-        if(confirm("¿Cambiaste de Supermercado? Se limpiará el carrito actual.")) {
-            total = 0;
-            updateTotalDisplay();
-            document.getElementById('cart-list').innerHTML = "";
-            showToast("Carrito nuevo para nueva tienda");
+    function handleStoreChange() {
+        if(total > 0) {
+            if(confirm("¿Cambiaste de Supermercado? Se vaciará el carrito actual.")) {
+                total = 0;
+                updateTotalDisplay();
+                document.getElementById('cart-list').innerHTML = "";
+                showToast("Carrito reiniciado");
+            }
         }
     }
 
-    function updateTotalDisplay() { document.getElementById('total-amount').innerText = '$' + total.toLocaleString(); }
-    function showToast(msg) { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show"; setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000); }
+    function updateTotalDisplay() { 
+        document.getElementById('total-amount').innerText = '$' + total.toLocaleString(); 
+    }
+
+    // --- 5. UTILIDADES Y CÁMARA ---
+    function showToast(msg, type = "normal") { 
+        const x = document.getElementById("toast"); 
+        x.innerText = msg; 
+        x.className = "show " + type; 
+        setTimeout(function(){ x.className = x.className.replace("show " + type, ""); }, 3000); 
+    }
 
     function startScanner() {
         try {
             const html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 150 }, formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ] };
+            const config = { 
+                fps: 10, 
+                qrbox: { width: 250, height: 150 }, 
+                formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ] 
+            };
+            
             html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-            .then(() => { document.getElementById('start-btn').style.display = 'none'; })
-            .catch(err => { html5QrCode.start({ facingMode: "user" }, config, onScanSuccess); });
-        } catch (e) { alert(e); }
+            .then(() => { 
+                document.getElementById('start-btn').style.display = 'none'; 
+                showToast("Cámara lista");
+            })
+            .catch(err => { 
+                console.warn("Error cámara trasera", err);
+                html5QrCode.start({ facingMode: "user" }, config, onScanSuccess); 
+            });
+        } catch (e) { 
+            alert("Error al iniciar: " + e); 
+        }
     }
 </script>
 
