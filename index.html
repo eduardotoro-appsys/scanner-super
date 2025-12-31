@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Precios Pro</title>
+    <title>Scanner Precios Pro V11</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -126,13 +126,21 @@
         }
         #qty-display { font-size: 1.5rem; font-weight: bold; min-width: 30px; text-align: center; }
 
+        /* NUEVO: ALERTA DE PRECIO (Estilos V10) */
+        .price-alert {
+            display: none; padding: 12px; margin-bottom: 15px; border-radius: 8px; 
+            font-size: 0.9rem; line-height: 1.4; border: 1px solid transparent;
+        }
+        .price-alert.cheaper { background-color: #fff3e0; color: #e65100; border-color: #ffe0b2; } /* Alerta Naranja */
+        .price-alert.info { background-color: #e3f2fd; color: #1565c0; border-color: #bbdefb; } /* Alerta Azul */
+
         .modal-btns { display: flex; gap: 10px; margin-top: 10px; }
         .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; }
         .btn-cancel { flex: 1; background: #f5f5f5; color: #333; padding: 15px; border: none; border-radius: 8px; font-weight: bold; }
 
         /* Búsqueda Manual */
         #search-results { list-style: none; padding: 0; margin-bottom: 15px; max-height: 200px; overflow-y: auto; }
-        .search-result-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; }
+        .search-result-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         
         #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 101; left: 50%; bottom: 30px; opacity: 0; transition: opacity 0.5s, bottom 0.5s; font-weight: 500; }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
@@ -192,12 +200,15 @@
     <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="closeAllModals()">Cerrar</button>
 </div>
 
-<!-- MODAL PRODUCTO (Con Cantidad) -->
+<!-- MODAL PRODUCTO (Con Alerta de Precios V10) -->
 <div id="product-modal" class="modal">
     <div class="modal-header">
         <strong>📝 Detalle Producto</strong>
         <span id="store-badge" style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;"></span>
     </div>
+    
+    <!-- ÁREA DE ALERTA DE PRECIOS -->
+    <div id="comparison-alert" class="price-alert"></div>
     
     <label style="font-size:0.8rem; color:#666;">Código:</label>
     <input type="text" id="modal-barcode" disabled>
@@ -205,7 +216,6 @@
     <input type="text" id="inp-name" placeholder="Nombre (ej: Leche)" autocomplete="off">
     <input type="tel" id="inp-price" placeholder="Precio Unidad ($)" inputmode="numeric">
     
-    <!-- NUEVO CONTROL DE CANTIDAD -->
     <div class="qty-wrapper">
         <span style="font-weight:bold; color:#555;">Cantidad:</span>
         <div class="qty-controls">
@@ -237,7 +247,7 @@
     let lastScannedCode = null;
     let isProcessing = false;
     let html5QrCode = null;
-    let currentQty = 1; // Variable para la cantidad
+    let currentQty = 1; 
 
     // --- ESCANEO ---
     async function onScanSuccess(decodedText) {
@@ -276,15 +286,50 @@
         document.getElementById('qty-display').innerText = currentQty;
     }
 
+    // --- COMPARADOR DE PRECIOS (Inteligencia Cruzada V10) ---
+    async function checkCrossStorePrice(code, currentStore, currentPrice) {
+        const alertBox = document.getElementById('comparison-alert');
+        alertBox.style.display = 'none'; // Reiniciar
+        alertBox.className = 'price-alert';
+
+        // Buscar el precio más bajo en OTROS supermercados
+        const { data: bestOption } = await db
+            .from('products')
+            .select('store, price, updated_at')
+            .eq('barcode', code)
+            .neq('store', currentStore) // Diferente al actual
+            .order('price', { ascending: true }) // El más barato primero
+            .limit(1)
+            .maybeSingle();
+
+        if (bestOption) {
+            // Caso 1: Tenemos precio actual y encontramos uno más barato fuera
+            if (currentPrice && bestOption.price < currentPrice) {
+                const diff = currentPrice - bestOption.price;
+                alertBox.innerHTML = `⚠️ <b>¡Está más barato en ${bestOption.store.toUpperCase()}!</b><br>Allá cuesta $${bestOption.price}. Te ahorrarías $${diff} por unidad.`;
+                alertBox.classList.add('cheaper');
+                alertBox.style.display = 'block';
+            }
+            // Caso 2: No tenemos precio actual (Producto Nuevo), mostramos referencia
+            else if (!currentPrice) {
+                alertBox.innerHTML = `ℹ️ <b>Referencia de precio:</b><br>El mejor precio registrado es $${bestOption.price} en ${bestOption.store.toUpperCase()}.`;
+                alertBox.classList.add('info');
+                alertBox.style.display = 'block';
+            }
+        }
+    }
+
     // --- MODALES ---
     function openProductModal(code, name, price, store, isEditableBarcode) {
-        // Reset cantidad siempre a 1 al abrir
         currentQty = 1;
         document.getElementById('qty-display').innerText = "1";
 
         document.getElementById('overlay-bg').style.display = 'block';
         document.getElementById('product-modal').style.display = 'block';
         
+        // Ejecutar Comparador (Asíncrono - No bloquea la UI)
+        checkCrossStorePrice(code, store, price);
+
         const barcodeInput = document.getElementById('modal-barcode');
         barcodeInput.value = code;
         barcodeInput.disabled = !isEditableBarcode;
@@ -304,6 +349,7 @@
         document.getElementById('overlay-bg').style.display = 'none';
         document.getElementById('product-modal').style.display = 'none';
         document.getElementById('search-modal').style.display = 'none';
+        document.getElementById('comparison-alert').style.display = 'none'; // Limpiar alerta
         isProcessing = false;
         lastScannedCode = null;
     }
@@ -320,7 +366,6 @@
         const { error } = await db.from('products').upsert({ barcode: finalBarcode, store: store, name: name, price: price });
 
         if (!error) {
-            // Pasamos la cantidad actual al carrito
             addToCart(name, price, currentQty);
             const msg = currentQty > 1 ? `✅ Agregados ${currentQty} productos` : `✅ Agregado`;
             showToast(msg, "success");
@@ -340,7 +385,6 @@
         const li = document.createElement('li');
         li.className = 'product-item';
         
-        // Renderizado inteligente según cantidad
         const qtyBadge = qty > 1 ? `<span class="item-qty-badge">${qty}x</span>` : '';
         const displayPrice = qty > 1 ? `$${subtotal.toLocaleString()} <small style='color:#999'>($${price} c/u)</small>` : `$${price.toLocaleString()}`;
 
@@ -357,9 +401,7 @@
     function removeFromCart(btn, subtotal) {
         if(navigator.vibrate) navigator.vibrate(50);
         if(!confirm("¿Borrar item?")) return;
-        
-        total -= subtotal; 
-        if(total < 0) total = 0;
+        total -= subtotal; if(total < 0) total = 0;
         updateTotalDisplay();
         btn.parentElement.remove();
     }
@@ -367,10 +409,7 @@
     function clearCart() {
         if(total === 0) return;
         if(confirm("¿Estás seguro de vaciar TODO el carrito?")) {
-            total = 0;
-            updateTotalDisplay();
-            document.getElementById('cart-list').innerHTML = "";
-            showToast("Carrito vaciado");
+            total = 0; updateTotalDisplay(); document.getElementById('cart-list').innerHTML = ""; showToast("Carrito vaciado");
         }
     }
 
@@ -386,8 +425,7 @@
         if (limitInput && parseInt(limitInput) > 0) {
             const limit = parseInt(limitInput);
             if (total > limit) {
-                amountEl.classList.add('danger');
-                boxEl.classList.add('danger');
+                amountEl.classList.add('danger'); boxEl.classList.add('danger');
                 if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
             } else if (total > limit * 0.9) {
                 amountEl.classList.add('warning');
@@ -399,9 +437,9 @@
     function handleStoreChange() { if(total > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { clearCart(); } }
     function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
     
-    // Búsqueda Manual (Misma lógica anterior)
+    // Búsqueda Manual
     function openSearchModal() { document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('search-modal').style.display = 'block'; document.getElementById('search-input').focus(); }
-    function createManualItem() { /* ... Lógica existente ... */ 
+    function createManualItem() { 
         const text = document.getElementById('search-input').value; if(!text) return; closeAllModals();
         const currentStore = document.getElementById('store-select').value;
         const isNumeric = /^\d+$/.test(text);
@@ -416,6 +454,8 @@
         if(text.length > 0) btn.innerText = /^\d+$/.test(text) ? `➕ Registrar: ${text}` : `➕ Crear: "${text}"`;
         clearTimeout(debounceTimer); debounceTimer = setTimeout(() => searchInDB(text), 300); 
     }
+    
+    // --- FUNCIÓN DE BÚSQUEDA MEJORADA (MUESTRA LA TIENDA) ---
     async function searchInDB(text) {
         if(text.length < 2) return;
         let query = db.from('products').select('*').limit(5);
@@ -425,7 +465,17 @@
         if(results?.length) {
             results.forEach(p => {
                 const li = document.createElement('li'); li.className = 'search-result-item';
-                li.innerHTML = `<div><span>${p.name}</span><br><small style="color:#888">${p.barcode}</small></div><b>$${p.price}</b>`;
+                // AQUÍ ESTÁ EL CAMBIO: Se agrega el supermercado (store) en verde
+                li.innerHTML = `
+                    <div style="flex-grow:1; margin-right:10px;">
+                        <span style="font-weight:600; display:block; line-height:1.2;">${p.name}</span>
+                        <small style="color:#666; font-size:0.8rem; display:flex; align-items:center; gap:5px; margin-top:2px;">
+                            <span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:0.75rem;">${p.store.toUpperCase()}</span>
+                            <span>${p.barcode}</span>
+                        </small>
+                    </div>
+                    <b style="font-size:1.1rem; color:#333;">$${p.price}</b>
+                `;
                 li.onclick = () => { closeAllModals(); openProductModal(p.barcode, p.name, p.price, p.store, false); };
                 list.appendChild(li);
             });
