@@ -172,9 +172,11 @@
     
     <ul id="search-results"></ul>
 
-    <button class="btn-main" id="btn-create-manual" style="display:none; background:#555;" onclick="createManualItem()">
+    <!-- BOTÓN MEJORADO: Color azul vibrante, más margen y sombra -->
+    <button class="btn-main" id="btn-create-manual" style="display:none; margin-top: 15px; background-color: #1976d2; box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3); width: 100%;" onclick="createManualItem()">
         ➕ Crear Nuevo
     </button>
+    
     <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="closeAllModals()">Cerrar</button>
 </div>
 
@@ -274,7 +276,8 @@
         }
 
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => searchInDB(text), 500);
+        // REDUCIDO: de 500ms a 300ms para mayor velocidad
+        debounceTimer = setTimeout(() => searchInDB(text), 300);
     }
 
     async function searchInDB(text) {
@@ -283,9 +286,10 @@
         // Buscamos por nombre O por código exacto
         let query = db.from('products').select('*').limit(5);
         
-        // Si es solo números, buscamos match exacto de código, si no, nombre parcial
+        // MODIFICADO: Ahora usa 'ilike' con '%' al final para códigos también (starts with)
         if (/^\d+$/.test(text)) {
-            query = query.eq('barcode', text);
+            // Buscar códigos que COMIENCEN con lo escrito
+            query = query.ilike('barcode', `${text}%`);
         } else {
             query = query.ilike('name', `%${text}%`);
         }
@@ -298,7 +302,14 @@
             results.forEach(p => {
                 const li = document.createElement('li');
                 li.className = 'search-result-item';
-                li.innerHTML = `<span>${p.name}</span> <b>$${p.price}</b>`;
+                // Añadimos el código en pequeñito para saber cuál es
+                li.innerHTML = `
+                    <div style="display:flex; flex-direction:column;">
+                        <span>${p.name}</span>
+                        <small style="color:#888; font-size:0.75rem;">${p.barcode}</small>
+                    </div>
+                    <b>$${p.price}</b>
+                `;
                 li.onclick = () => {
                     closeAllModals();
                     // Al abrir uno existente, NO permitimos editar el código
