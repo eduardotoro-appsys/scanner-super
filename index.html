@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Precios Pro V12</title>
+    <title>Scanner Precios Pro V13</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -23,12 +23,10 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
             transition: background-color 0.3s;
         }
-        /* Estilo para header offline */
         header.offline { background-color: #455a64; }
 
         h1 { margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 5px; font-weight: normal; }
         
-        /* Indicador de Conexión */
         #connection-status {
             font-size: 0.75rem; color: white; background: rgba(0,0,0,0.2); 
             padding: 2px 8px; border-radius: 10px; margin-bottom: 5px; display: none;
@@ -45,7 +43,6 @@
         
         .dashboard { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
         
-        /* BOTONES PRINCIPALES */
         .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .btn-main { 
             flex: 1; padding: 15px; background-color: #2e7d32; color: white; 
@@ -67,14 +64,11 @@
             transition: all 0.3s ease; position: relative;
         }
         .total-price { font-size: 2.5rem; font-weight: 800; color: #2e7d32; margin-top: 5px; transition: color 0.3s; }
-        
         .total-price.warning { color: #f57c00; }
         .total-price.danger { color: #d32f2f; animation: pulse 1s infinite; }
         .total-box.danger { border-color: #d32f2f; background-color: #ffebee; }
-        
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* Control de Presupuesto */
         .budget-control { 
             margin-top: 15px; padding-top: 10px; border-top: 1px dashed #eee;
             display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; color: #555;
@@ -83,8 +77,6 @@
             width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; 
             text-align: center; font-size: 1rem; color: #333; margin-bottom: 0; font-weight: bold;
         }
-
-        /* Botón Vaciar Carrito */
         .btn-clear-cart {
             margin-top: 15px; background: none; border: 1px solid #ffcdd2; color: #c62828;
             padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;
@@ -92,6 +84,14 @@
 
         /* LISTA PRODUCTOS */
         .product-list { list-style: none; padding: 0; }
+        
+        /* CABECERA DE CATEGORÍA */
+        .category-header {
+            background: #e8f5e9; color: #2e7d32; padding: 8px 12px; border-radius: 6px;
+            font-weight: bold; margin-top: 15px; margin-bottom: 5px; font-size: 0.95rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+
         .product-item { 
             background: white; border-bottom: 1px solid #f0f0f0; padding: 15px; 
             display: flex; justify-content: space-between; align-items: center; 
@@ -114,16 +114,17 @@
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         
-        input { 
+        input, select { 
             width: 100%; padding: 15px; border: 1px solid #ccc; border-radius: 8px; 
             font-size: 1.1rem; box-sizing: border-box; margin-bottom: 15px; -webkit-appearance: none;
         }
+        select { background-color: white; }
+        
         #modal-barcode {
             font-family: monospace; font-size: 0.9rem; color: #666; 
             background: #f9f9f9; margin-bottom: 10px; border: 1px dashed #ccc;
         }
         
-        /* NUEVO: CONTROL DE CANTIDAD */
         .qty-wrapper {
             display: flex; align-items: center; justify-content: space-between;
             margin-bottom: 15px; background: #f5f5f5; padding: 10px; border-radius: 8px;
@@ -136,19 +137,17 @@
         }
         #qty-display { font-size: 1.5rem; font-weight: bold; min-width: 30px; text-align: center; }
 
-        /* ALERTA DE PRECIO */
         .price-alert {
             display: none; padding: 12px; margin-bottom: 15px; border-radius: 8px; 
             font-size: 0.9rem; line-height: 1.4; border: 1px solid transparent;
         }
-        .price-alert.cheaper { background-color: #fff3e0; color: #e65100; border-color: #ffe0b2; } /* Alerta Naranja */
-        .price-alert.info { background-color: #e3f2fd; color: #1565c0; border-color: #bbdefb; } /* Alerta Azul */
+        .price-alert.cheaper { background-color: #fff3e0; color: #e65100; border-color: #ffe0b2; }
+        .price-alert.info { background-color: #e3f2fd; color: #1565c0; border-color: #bbdefb; }
 
         .modal-btns { display: flex; gap: 10px; margin-top: 10px; }
         .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; }
         .btn-cancel { flex: 1; background: #f5f5f5; color: #333; padding: 15px; border: none; border-radius: 8px; font-weight: bold; }
 
-        /* Búsqueda Manual */
         #search-results { list-style: none; padding: 0; margin-bottom: 15px; max-height: 200px; overflow-y: auto; }
         .search-result-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         
@@ -188,12 +187,10 @@
     <div class="total-box">
         <small>Total Carrito</small>
         <div class="total-price" id="total-amount">$0</div>
-        
         <div class="budget-control">
             <span>🎯 Meta: $</span>
             <input type="number" class="budget-input" id="budget-limit" placeholder="..." oninput="updateTotalDisplay()">
         </div>
-        
         <button class="btn-clear-cart" onclick="clearCart()">🗑️ Vaciar Carrito</button>
     </div>
 
@@ -226,6 +223,23 @@
     <input type="text" id="inp-name" placeholder="Nombre (ej: Leche)" autocomplete="off">
     <input type="tel" id="inp-price" placeholder="Precio Unidad ($)" inputmode="numeric">
     
+    <!-- SELECTOR DE CATEGORÍA NUEVO -->
+    <select id="inp-category">
+        <option value="despensa">🥫 Despensa</option>
+        <option value="lacteos">🧀 Lácteos y Huevos</option>
+        <option value="frutas">🥦 Frutas y Verduras</option>
+        <option value="carnes">🥩 Carnes y Pescados</option>
+        <option value="panaderia">🍞 Panadería</option>
+        <option value="bebidas">🥤 Bebidas</option>
+        <option value="snack">🍪 Snacks y Dulces</option>
+        <option value="alcohol">🍷 Cervezas y Licores</option>
+        <option value="aseo">🧹 Limpieza y Aseo</option>
+        <option value="personal">🧴 Cuidado Personal</option>
+        <option value="mascotas">🐶 Mascotas</option>
+        <option value="hogar">🏠 Hogar</option>
+        <option value="otros" selected>📦 Otros</option>
+    </select>
+
     <div class="qty-wrapper">
         <span style="font-weight:bold; color:#555;">Cantidad:</span>
         <div class="qty-controls">
@@ -253,90 +267,74 @@
     
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // ESTADO DEL CARRITO (AHORA ES UN ARRAY PARA PODER AGRUPAR)
+    let cart = []; 
+    
     let total = 0;
     let lastScannedCode = null;
     let isProcessing = false;
     let html5QrCode = null;
     let currentQty = 1;
-    
-    // --- LÓGICA OFFLINE / ONLINE ---
     let isOnline = navigator.onLine;
 
-    window.addEventListener('online', () => {
-        isOnline = true;
-        updateConnectionStatus();
-        syncOfflineData(); // Sincronizar al volver
-        showToast("Conexión restaurada 🌐", "success");
-    });
+    // MAPA DE CATEGORÍAS PARA MOSTRAR NOMBRES BONITOS
+    const CATEGORIES = {
+        'frutas': '🥦 Frutas y Verduras',
+        'carnes': '🥩 Carnes y Pescados',
+        'lacteos': '🧀 Lácteos y Huevos',
+        'panaderia': '🍞 Panadería y Pastelería',
+        'despensa': '🥫 Despensa',
+        'bebidas': '🥤 Bebidas',
+        'alcohol': '🍷 Cervezas y Licores',
+        'snack': '🍪 Snacks y Dulces',
+        'aseo': '🧹 Limpieza y Aseo',
+        'personal': '🧴 Cuidado Personal',
+        'mascotas': '🐶 Mascotas',
+        'hogar': '🏠 Hogar',
+        'otros': '📦 Otros'
+    };
+    // ORDEN DE APARICIÓN EN LA LISTA
+    const CAT_ORDER = ["frutas", "carnes", "lacteos", "panaderia", "despensa", "bebidas", "alcohol", "snack", "aseo", "personal", "mascotas", "hogar", "otros"];
 
-    window.addEventListener('offline', () => {
-        isOnline = false;
-        updateConnectionStatus();
-        showToast("Modo Offline activado 📡", "normal");
-    });
+    // --- LÓGICA OFFLINE ---
+    window.addEventListener('online', () => { isOnline = true; updateConnectionStatus(); syncOfflineData(); showToast("Conexión restaurada 🌐", "success"); });
+    window.addEventListener('offline', () => { isOnline = false; updateConnectionStatus(); showToast("Modo Offline activado 📡", "normal"); });
+    updateConnectionStatus();
 
     function updateConnectionStatus() {
         const header = document.getElementById('app-header');
         const badge = document.getElementById('connection-status');
-        if(isOnline) {
-            header.classList.remove('offline');
-            badge.style.display = 'none';
-        } else {
-            header.classList.add('offline');
-            badge.style.display = 'inline-block';
-        }
+        if(isOnline) { header.classList.remove('offline'); badge.style.display = 'none'; } 
+        else { header.classList.add('offline'); badge.style.display = 'inline-block'; }
     }
     
-    // Al cargar la página
-    updateConnectionStatus();
-
-    // --- ALMACENAMIENTO LOCAL (Offline) ---
     const CACHE_KEY = 'scanner_pro_products';
     const QUEUE_KEY = 'scanner_pro_queue';
 
-    function getLocalCache() {
-        return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-    }
-
+    function getLocalCache() { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
     function saveToLocalCache(product) {
         const cache = getLocalCache();
-        // Clave única: CODIGO_TIENDA
         const key = `${product.barcode}_${product.store}`;
         cache[key] = product;
         localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
     }
-
     function addToSyncQueue(product) {
         const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
         queue.push(product);
         localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
     }
-
     async function syncOfflineData() {
         const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
         if (queue.length === 0) return;
-
         showToast(`Sincronizando ${queue.length} cambios...`);
-        
-        // Procesamos la cola
         const remainingQueue = [];
         for (const item of queue) {
             const { error } = await db.from('products').upsert(item);
-            if (error) {
-                console.error("Error sync:", error);
-                remainingQueue.push(item); // Si falla, lo guardamos para el próximo intento
-            }
+            if (error) remainingQueue.push(item);
         }
-
         localStorage.setItem(QUEUE_KEY, JSON.stringify(remainingQueue));
-        
-        if (remainingQueue.length === 0) {
-            showToast("Sincronización completa ✅", "success");
-        } else {
-            showToast("Algunos datos pendientes...", "normal");
-        }
+        if (remainingQueue.length === 0) showToast("Sincronización completa ✅", "success");
     }
-
 
     // --- ESCANEO ---
     async function onScanSuccess(decodedText) {
@@ -351,40 +349,32 @@
         const currentStore = document.getElementById('store-select').value;
         if(!isManualCreation) showToast(`🔍 Buscando...`);
 
-        // ESTRATEGIA: Intentar Nube primero, caer a Local si falla
         let product = null;
-
         if (isOnline) {
             try {
                 let { data } = await db.from('products').select('*').eq('barcode', code).eq('store', currentStore).single();
                 product = data;
-                
-                // Si encontramos en la nube, actualizamos caché local para el futuro
                 if(product) saveToLocalCache(product);
-
-            } catch (err) {
-                console.warn("Fallo red, buscando local...");
-            }
+            } catch (err) {}
         }
-
-        // Si no hay producto (porque es offline o error), buscamos en caché
         if (!product) {
             const cache = getLocalCache();
-            const key = `${code}_${currentStore}`;
-            product = cache[key];
+            product = cache[`${code}_${currentStore}`];
         }
 
         if (product) {
-            openProductModal(code, product.name, product.price, currentStore, false);
+            openProductModal(code, product.name, product.price, currentStore, false, product.category);
         } else {
-            // Producto Nuevo (o no encontrado)
-            // Intentar buscar nombre sugerido (Solo si estamos online por ahora)
-            let suggested = "";
+            let suggestedName = "";
+            let suggestedCat = "otros"; // Por defecto
             if (isOnline) {
-                let { data: other } = await db.from('products').select('name').eq('barcode', code).limit(1).maybeSingle();
-                suggested = other ? other.name : "";
+                let { data: other } = await db.from('products').select('name, category').eq('barcode', code).limit(1).maybeSingle();
+                if(other) {
+                    suggestedName = other.name;
+                    if(other.category) suggestedCat = other.category;
+                }
             }
-            openProductModal(code, suggested, "", currentStore, isManualCreation);
+            openProductModal(code, suggestedName, "", currentStore, isManualCreation, suggestedCat);
         }
     }
 
@@ -395,39 +385,26 @@
     }
 
     async function checkCrossStorePrice(code, currentStore, currentPrice) {
-        if (!isOnline) return; // Sin internet no comparamos
-
+        if (!isOnline) return;
         const alertBox = document.getElementById('comparison-alert');
-        alertBox.style.display = 'none'; 
-        alertBox.className = 'price-alert';
+        alertBox.style.display = 'none'; alertBox.className = 'price-alert';
 
-        const { data: bestOption } = await db
-            .from('products')
-            .select('store, price, updated_at')
-            .eq('barcode', code)
-            .neq('store', currentStore)
-            .order('price', { ascending: true })
-            .limit(1)
-            .maybeSingle();
+        const { data: bestOption } = await db.from('products').select('store, price').eq('barcode', code).neq('store', currentStore).order('price', { ascending: true }).limit(1).maybeSingle();
 
         if (bestOption) {
             if (currentPrice && bestOption.price < currentPrice) {
                 const diff = currentPrice - bestOption.price;
                 alertBox.innerHTML = `⚠️ <b>¡Más barato en ${bestOption.store.toUpperCase()}!</b><br>Allá cuesta $${bestOption.price}. Ahorras $${diff}.`;
-                alertBox.classList.add('cheaper');
-                alertBox.style.display = 'block';
-            }
-            else if (!currentPrice) {
+                alertBox.classList.add('cheaper'); alertBox.style.display = 'block';
+            } else if (!currentPrice) {
                 alertBox.innerHTML = `ℹ️ <b>Referencia:</b><br>Mejor precio: $${bestOption.price} en ${bestOption.store.toUpperCase()}.`;
-                alertBox.classList.add('info');
-                alertBox.style.display = 'block';
+                alertBox.classList.add('info'); alertBox.style.display = 'block';
             }
         }
     }
 
-    function openProductModal(code, name, price, store, isEditableBarcode) {
-        currentQty = 1;
-        document.getElementById('qty-display').innerText = "1";
+    function openProductModal(code, name, price, store, isEditableBarcode, category = 'otros') {
+        currentQty = 1; document.getElementById('qty-display').innerText = "1";
         document.getElementById('overlay-bg').style.display = 'block';
         document.getElementById('product-modal').style.display = 'block';
         
@@ -441,6 +418,9 @@
 
         document.getElementById('inp-name').value = name;
         document.getElementById('inp-price').value = price;
+        // Asignar Categoría
+        document.getElementById('inp-category').value = category || 'otros';
+        
         document.getElementById('store-badge').innerText = store.toUpperCase();
 
         if(price) document.querySelector('.btn-confirm').focus();
@@ -453,84 +433,124 @@
         document.getElementById('product-modal').style.display = 'none';
         document.getElementById('search-modal').style.display = 'none';
         document.getElementById('comparison-alert').style.display = 'none';
-        isProcessing = false;
-        lastScannedCode = null;
+        isProcessing = false; lastScannedCode = null;
     }
 
-    // --- GUARDAR (Con soporte Offline) ---
+    // --- GUARDAR ---
     async function saveAndAdd() {
         const name = document.getElementById('inp-name').value;
         const price = parseInt(document.getElementById('inp-price').value);
         const store = document.getElementById('store-select').value;
+        const category = document.getElementById('inp-category').value; // <--- NUEVO
         const finalBarcode = document.getElementById('modal-barcode').value.trim();
 
         if (!name || isNaN(price) || !finalBarcode) { showToast("⚠️ Faltan datos", "alert"); return; }
 
-        const productData = { barcode: finalBarcode, store: store, name: name, price: price };
+        const productData = { barcode: finalBarcode, store: store, name: name, price: price, category: category };
 
-        // 1. Guardar siempre en caché local (para uso inmediato)
         saveToLocalCache(productData);
 
-        // 2. Decidir dónde guardar (Nube o Cola)
         if (isOnline) {
             const { error } = await db.from('products').upsert(productData);
-            if (!error) {
-                finalizeSave(name, price, currentQty);
-            } else {
-                // Fallback si falla la petición aunque parezca haber internet
-                addToSyncQueue(productData);
-                finalizeSave(name, price, currentQty, true);
-            }
+            if (!error) finalizeSave(productData, currentQty);
+            else { addToSyncQueue(productData); finalizeSave(productData, currentQty, true); }
         } else {
-            // Modo Offline
             addToSyncQueue(productData);
-            finalizeSave(name, price, currentQty, true);
+            finalizeSave(productData, currentQty, true);
         }
     }
 
-    function finalizeSave(name, price, qty, offlineMode = false) {
-        addToCart(name, price, qty);
+    function finalizeSave(product, qty, offlineMode = false) {
+        addToCart(product, qty);
         const msg = offlineMode ? "Guardado en local 📡" : "Guardado exitoso ✅";
         showToast(msg, "success");
         closeAllModals();
     }
 
-    // --- CARRITO ---
-    function addToCart(name, price, qty) {
-        const subtotal = price * qty;
-        total += subtotal;
-        updateTotalDisplay();
-        
-        const ul = document.getElementById('cart-list');
-        const li = document.createElement('li');
-        li.className = 'product-item';
-        
-        const qtyBadge = qty > 1 ? `<span class="item-qty-badge">${qty}x</span>` : '';
-        const displayPrice = qty > 1 ? `$${subtotal.toLocaleString()} <small style='color:#999'>($${price} c/u)</small>` : `$${price.toLocaleString()}`;
-
-        li.innerHTML = `
-            <div class="item-info">
-                <span class="item-name">${qtyBadge} ${name}</span>
-                <span class="item-price">${displayPrice}</span>
-            </div>
-            <button class="btn-delete" onclick="removeFromCart(this, ${subtotal})">×</button>
-        `;
-        ul.insertBefore(li, ul.firstChild);
+    // --- CARRITO V13 (AGRUPADO) ---
+    function addToCart(product, qty) {
+        // Agregamos al array de estado, con un ID único para poder borrarlo luego
+        const cartItem = {
+            id: Date.now() + Math.random(),
+            name: product.name,
+            price: product.price,
+            category: product.category || 'otros',
+            qty: qty,
+            subtotal: product.price * qty
+        };
+        cart.push(cartItem);
+        renderCart();
     }
 
-    function removeFromCart(btn, subtotal) {
+    function removeFromCart(id) {
         if(navigator.vibrate) navigator.vibrate(50);
         if(!confirm("¿Borrar item?")) return;
-        total -= subtotal; if(total < 0) total = 0;
-        updateTotalDisplay();
-        btn.parentElement.remove();
+        // Filtramos para quitar el item
+        cart = cart.filter(item => item.id !== id);
+        renderCart();
     }
 
     function clearCart() {
-        if(total === 0) return;
-        if(confirm("¿Estás seguro de vaciar TODO el carrito?")) {
-            total = 0; updateTotalDisplay(); document.getElementById('cart-list').innerHTML = ""; showToast("Carrito vaciado");
+        if(cart.length === 0) return;
+        if(confirm("¿Vaciar carrito?")) {
+            cart = [];
+            renderCart();
+            showToast("Carrito vaciado");
         }
+    }
+
+    // RENDERIZADO DEL CARRITO CON GRUPOS
+    function renderCart() {
+        const list = document.getElementById('cart-list');
+        list.innerHTML = "";
+        
+        let calculatedTotal = 0;
+        const grouped = {};
+
+        // 1. Agrupar items
+        cart.forEach(item => {
+            if(!grouped[item.category]) grouped[item.category] = [];
+            grouped[item.category].push(item);
+            calculatedTotal += item.subtotal;
+        });
+
+        // 2. Ordenar Categorías (Las que no están en la lista van al final)
+        const keys = Object.keys(grouped).sort((a,b) => {
+            let ia = CAT_ORDER.indexOf(a); let ib = CAT_ORDER.indexOf(b);
+            if(ia === -1) ia = 99; if(ib === -1) ib = 99;
+            return ia - ib;
+        });
+
+        // 3. Generar HTML
+        keys.forEach(cat => {
+            // Header de Categoría
+            const header = document.createElement('li');
+            header.className = 'category-header';
+            header.innerText = CATEGORIES[cat] || cat.toUpperCase();
+            list.appendChild(header);
+
+            // Items de esa categoría
+            grouped[cat].forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'product-item';
+                
+                const qtyBadge = item.qty > 1 ? `<span class="item-qty-badge">${item.qty}x</span>` : '';
+                const displayPrice = item.qty > 1 ? `$${item.subtotal.toLocaleString()} <small style='color:#999'>($${item.price} c/u)</small>` : `$${item.price.toLocaleString()}`;
+
+                li.innerHTML = `
+                    <div style="flex-grow:1">
+                        <span style="font-weight:600; font-size:1rem;">${qtyBadge} ${item.name}</span><br>
+                        <span style="color:#666; font-size:0.9rem;">${displayPrice}</span>
+                    </div>
+                    <button class="btn-delete" onclick="removeFromCart(${item.id})">×</button>
+                `;
+                list.appendChild(li);
+            });
+        });
+
+        // 4. Actualizar Total Global
+        total = calculatedTotal;
+        updateTotalDisplay();
     }
 
     function updateTotalDisplay() { 
@@ -545,13 +565,11 @@
             if (total > limit) {
                 amountEl.classList.add('danger'); boxEl.classList.add('danger');
                 if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-            } else if (total > limit * 0.9) {
-                amountEl.classList.add('warning');
-            }
+            } else if (total > limit * 0.9) amountEl.classList.add('warning');
         }
     }
 
-    function handleStoreChange() { if(total > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { clearCart(); } }
+    function handleStoreChange() { if(cart.length > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { clearCart(); } }
     function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
     
     // Búsqueda Manual
@@ -573,25 +591,19 @@
     }
     async function searchInDB(text) {
         if(text.length < 2) return;
-        
-        // Búsqueda Offline (Local) primero si no hay internet
+        // Búsqueda Offline
         if (!isOnline) {
              const cache = getLocalCache();
-             const results = Object.values(cache).filter(p => 
-                 p.name.toLowerCase().includes(text.toLowerCase()) || 
-                 p.barcode.startsWith(text)
-             );
+             const results = Object.values(cache).filter(p => p.name.toLowerCase().includes(text.toLowerCase()) || p.barcode.startsWith(text));
              renderSearchResults(results);
              return;
         }
-
-        // Búsqueda Online
+        // Online
         let query = db.from('products').select('*').limit(5);
         if (/^\d+$/.test(text)) query = query.ilike('barcode', `${text}%`); else query = query.ilike('name', `%${text}%`);
         let { data: results } = await query;
         renderSearchResults(results);
     }
-
     function renderSearchResults(results) {
         const list = document.getElementById('search-results'); list.innerHTML = '';
         if(results?.length) {
@@ -599,15 +611,12 @@
                 const li = document.createElement('li'); li.className = 'search-result-item';
                 li.innerHTML = `
                     <div style="flex-grow:1; margin-right:10px;">
-                        <span style="font-weight:600; display:block; line-height:1.2;">${p.name}</span>
-                        <small style="color:#666; font-size:0.8rem; display:flex; align-items:center; gap:5px; margin-top:2px;">
-                            <span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:0.75rem;">${p.store.toUpperCase()}</span>
-                            <span>${p.barcode}</span>
-                        </small>
+                        <span style="font-weight:600;">${p.name}</span>
+                        <small style="color:#666; display:block;">${p.store.toUpperCase()}</small>
                     </div>
-                    <b style="font-size:1.1rem; color:#333;">$${p.price}</b>
+                    <b>$${p.price}</b>
                 `;
-                li.onclick = () => { closeAllModals(); openProductModal(p.barcode, p.name, p.price, p.store, false); };
+                li.onclick = () => { closeAllModals(); openProductModal(p.barcode, p.name, p.price, p.store, false, p.category); };
                 list.appendChild(li);
             });
         } else { list.innerHTML = '<li style="padding:10px;color:#666">Sin resultados</li>'; }
