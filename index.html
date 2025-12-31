@@ -50,26 +50,21 @@
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         
-        /* CAJA DE TOTAL CON ALERTA DE PRESUPUESTO */
+        /* CAJA TOTAL */
         .total-box { 
             background: white; padding: 20px; border-radius: 12px; text-align: center; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; border: 2px solid transparent;
-            transition: all 0.3s ease;
+            transition: all 0.3s ease; position: relative;
         }
         .total-price { font-size: 2.5rem; font-weight: 800; color: #2e7d32; margin-top: 5px; transition: color 0.3s; }
         
-        /* Estilos de Alerta */
-        .total-price.warning { color: #f57c00; } /* Naranja: Cerca del límite */
-        .total-price.danger { color: #d32f2f; animation: pulse 1s infinite; } /* Rojo: Pasado */
+        .total-price.warning { color: #f57c00; }
+        .total-price.danger { color: #d32f2f; animation: pulse 1s infinite; }
         .total-box.danger { border-color: #d32f2f; background-color: #ffebee; }
         
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* Input de Meta */
+        /* Control de Presupuesto */
         .budget-control { 
             margin-top: 15px; padding-top: 10px; border-top: 1px dashed #eee;
             display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; color: #555;
@@ -79,24 +74,29 @@
             text-align: center; font-size: 1rem; color: #333; margin-bottom: 0; font-weight: bold;
         }
 
+        /* Botón Vaciar Carrito */
+        .btn-clear-cart {
+            margin-top: 15px; background: none; border: 1px solid #ffcdd2; color: #c62828;
+            padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;
+        }
+
+        /* LISTA PRODUCTOS */
         .product-list { list-style: none; padding: 0; }
         .product-item { 
             background: white; border-bottom: 1px solid #f0f0f0; padding: 15px; 
             display: flex; justify-content: space-between; align-items: center; 
             animation: fadeIn 0.3s ease;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        .item-info { flex-grow: 1; }
-        .item-name { font-weight: 600; font-size: 1rem; display: block; }
-        .item-price { color: #666; font-size: 0.9rem; }
-        
+        .item-qty-badge {
+            background: #2e7d32; color: white; padding: 2px 6px; border-radius: 4px; 
+            font-size: 0.8rem; font-weight: bold; margin-right: 5px;
+        }
         .btn-delete { 
             background: #ffcdd2; color: #c62828; border: none; padding: 8px 12px; 
             border-radius: 6px; margin-left: 10px; cursor: pointer; font-size: 1.2rem;
         }
 
-        /* MODALES COMUNES */
+        /* MODAL */
         .modal { 
             display: none; position: fixed; bottom: 0; left: 0; right: 0; 
             background: white; padding: 25px 20px; border-radius: 20px 20px 0 0; 
@@ -106,42 +106,37 @@
         
         input { 
             width: 100%; padding: 15px; border: 1px solid #ccc; border-radius: 8px; 
-            font-size: 1.1rem; box-sizing: border-box; margin-bottom: 15px; 
-            -webkit-appearance: none;
+            font-size: 1.1rem; box-sizing: border-box; margin-bottom: 15px; -webkit-appearance: none;
         }
-        /* Estilo especial para el input del código de barras */
         #modal-barcode {
             font-family: monospace; font-size: 0.9rem; color: #666; 
-            background: #f9f9f9; margin-bottom: 10px;
-            border: 1px dashed #ccc;
-        }
-        #modal-barcode:disabled {
-            background: transparent; border: none; color: #333; padding: 0; margin-bottom: 10px;
+            background: #f9f9f9; margin-bottom: 10px; border: 1px dashed #ccc;
         }
         
+        /* NUEVO: CONTROL DE CANTIDAD */
+        .qty-wrapper {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 15px; background: #f5f5f5; padding: 10px; border-radius: 8px;
+        }
+        .qty-controls { display: flex; align-items: center; gap: 15px; }
+        .btn-qty {
+            width: 40px; height: 40px; border-radius: 50%; border: none;
+            background: #fff; color: #2e7d32; font-size: 1.5rem; font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        #qty-display { font-size: 1.5rem; font-weight: bold; min-width: 30px; text-align: center; }
+
         .modal-btns { display: flex; gap: 10px; margin-top: 10px; }
         .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; }
         .btn-cancel { flex: 1; background: #f5f5f5; color: #333; padding: 15px; border: none; border-radius: 8px; font-weight: bold; }
 
-        /* LISTA DE RESULTADOS DE BÚSQUEDA */
+        /* Búsqueda Manual */
         #search-results { list-style: none; padding: 0; margin-bottom: 15px; max-height: 200px; overflow-y: auto; }
-        .search-result-item { 
-            padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; 
-            display: flex; justify-content: space-between;
-        }
-        .search-result-item:active { background-color: #f0f0f0; }
-
-        #toast { 
-            visibility: hidden; min-width: 250px; margin-left: -125px; 
-            background-color: #333; color: #fff; text-align: center; border-radius: 50px; 
-            padding: 16px; position: fixed; z-index: 101; left: 50%; bottom: 30px; 
-            opacity: 0; transition: opacity 0.5s, bottom 0.5s; font-weight: 500;
-        }
+        .search-result-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; }
+        
+        #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 101; left: 50%; bottom: 30px; opacity: 0; transition: opacity 0.5s, bottom 0.5s; font-weight: 500; }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
-        #overlay-bg {
-            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,0.5); z-index: 90;
-        }
+        #overlay-bg { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 90; }
     </style>
 </head>
 <body>
@@ -167,59 +162,58 @@
 
 <div class="dashboard">
     <div class="btn-group">
-        <button id="start-btn" class="btn-main" onclick="startScanner()">
-            📷 Escanear
-        </button>
-        <button class="btn-secondary" onclick="openSearchModal()">
-            ✍️ Manual
-        </button>
+        <button id="start-btn" class="btn-main" onclick="startScanner()">📷 Escanear</button>
+        <button class="btn-secondary" onclick="openSearchModal()">✍️ Manual</button>
     </div>
     
     <div class="total-box">
         <small>Total Carrito</small>
         <div class="total-price" id="total-amount">$0</div>
         
-        <!-- CONTROL DE PRESUPUESTO NUEVO -->
         <div class="budget-control">
-            <span>🎯 Meta Máxima: $</span>
+            <span>🎯 Meta: $</span>
             <input type="number" class="budget-input" id="budget-limit" placeholder="..." oninput="updateTotalDisplay()">
         </div>
+        
+        <button class="btn-clear-cart" onclick="clearCart()">🗑️ Vaciar Carrito</button>
     </div>
 
     <ul class="product-list" id="cart-list"></ul>
 </div>
 
-<!-- FONDO OSCURO -->
 <div id="overlay-bg" onclick="closeAllModals()"></div>
 
-<!-- MODAL 1: BÚSQUEDA MANUAL -->
+<!-- MODAL BÚSQUEDA -->
 <div id="search-modal" class="modal">
-    <div class="modal-header">
-        <strong>🔍 Buscar o Crear</strong>
-    </div>
-    <input type="text" id="search-input" placeholder="Nombre o Código (ej: 780...)" onkeyup="handleSearchTyping(this.value)">
-    
+    <div class="modal-header"><strong>🔍 Buscar o Crear</strong></div>
+    <input type="text" id="search-input" placeholder="Nombre o Código..." onkeyup="handleSearchTyping(this.value)">
     <ul id="search-results"></ul>
-
-    <button class="btn-main" id="btn-create-manual" style="display:none; margin-top: 15px; background-color: #1976d2; box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3); width: 100%;" onclick="createManualItem()">
-        ➕ Crear Nuevo
-    </button>
-    
+    <button class="btn-main" id="btn-create-manual" style="display:none; margin-top: 15px; background-color: #1976d2; box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3); width: 100%;" onclick="createManualItem()">➕ Crear Nuevo</button>
     <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="closeAllModals()">Cerrar</button>
 </div>
 
-<!-- MODAL 2: EDICIÓN DE PRODUCTO -->
+<!-- MODAL PRODUCTO (Con Cantidad) -->
 <div id="product-modal" class="modal">
     <div class="modal-header">
         <strong>📝 Detalle Producto</strong>
         <span id="store-badge" style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;"></span>
     </div>
     
-    <label style="font-size:0.8rem; color:#666;">Código de Barras:</label>
-    <input type="text" id="modal-barcode" placeholder="Código de barras" disabled>
+    <label style="font-size:0.8rem; color:#666;">Código:</label>
+    <input type="text" id="modal-barcode" disabled>
     
-    <input type="text" id="inp-name" placeholder="Nombre (ej: Coca Cola)" autocomplete="off">
-    <input type="tel" id="inp-price" placeholder="Precio ($)" inputmode="numeric">
+    <input type="text" id="inp-name" placeholder="Nombre (ej: Leche)" autocomplete="off">
+    <input type="tel" id="inp-price" placeholder="Precio Unidad ($)" inputmode="numeric">
+    
+    <!-- NUEVO CONTROL DE CANTIDAD -->
+    <div class="qty-wrapper">
+        <span style="font-weight:bold; color:#555;">Cantidad:</span>
+        <div class="qty-controls">
+            <button class="btn-qty" onclick="adjustQty(-1)">−</button>
+            <span id="qty-display">1</span>
+            <button class="btn-qty" onclick="adjustQty(1)">+</button>
+        </div>
+    </div>
     
     <div class="modal-btns">
         <button class="btn-cancel" onclick="closeAllModals()">Cancelar</button>
@@ -243,8 +237,9 @@
     let lastScannedCode = null;
     let isProcessing = false;
     let html5QrCode = null;
+    let currentQty = 1; // Variable para la cantidad
 
-    // --- 1. LÓGICA DE ESCANEO ---
+    // --- ESCANEO ---
     async function onScanSuccess(decodedText) {
         if (isProcessing || decodedText === lastScannedCode) return;
         isProcessing = true;
@@ -259,7 +254,7 @@
 
         try {
             let { data: product } = await db.from('products').select('*').eq('barcode', code).eq('store', currentStore).single();
-
+            
             if (product) {
                 openProductModal(code, product.name, product.price, currentStore, false);
             } else {
@@ -274,101 +269,27 @@
         }
     }
 
-    // --- 2. BÚSQUEDA MANUAL ---
-    function openSearchModal() {
-        document.getElementById('overlay-bg').style.display = 'block';
-        document.getElementById('search-modal').style.display = 'block';
-        document.getElementById('search-input').value = '';
-        document.getElementById('search-results').innerHTML = '';
-        document.getElementById('btn-create-manual').style.display = 'none';
-        document.getElementById('search-input').focus();
+    // --- MANEJO DE CANTIDAD ---
+    function adjustQty(delta) {
+        currentQty += delta;
+        if(currentQty < 1) currentQty = 1;
+        document.getElementById('qty-display').innerText = currentQty;
     }
 
-    let debounceTimer;
-    function handleSearchTyping(text) {
-        const btnCreate = document.getElementById('btn-create-manual');
-        if(text.length > 0) {
-            btnCreate.style.display = 'block';
-            const isNumeric = /^\d+$/.test(text);
-            btnCreate.innerText = isNumeric ? `➕ Registrar Código: ${text}` : `➕ Crear Nuevo: "${text}"`;
-        } else {
-            btnCreate.style.display = 'none';
-        }
-
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => searchInDB(text), 300);
-    }
-
-    async function searchInDB(text) {
-        if(text.length < 2) return;
-        
-        let query = db.from('products').select('*').limit(5);
-        if (/^\d+$/.test(text)) {
-            query = query.ilike('barcode', `${text}%`);
-        } else {
-            query = query.ilike('name', `%${text}%`);
-        }
-
-        let { data: results } = await query;
-        const list = document.getElementById('search-results');
-        list.innerHTML = '';
-
-        if(results && results.length > 0) {
-            results.forEach(p => {
-                const li = document.createElement('li');
-                li.className = 'search-result-item';
-                li.innerHTML = `
-                    <div style="display:flex; flex-direction:column;">
-                        <span>${p.name}</span>
-                        <small style="color:#888; font-size:0.75rem;">${p.barcode}</small>
-                    </div>
-                    <b>$${p.price}</b>
-                `;
-                li.onclick = () => {
-                    closeAllModals();
-                    openProductModal(p.barcode, p.name, p.price, p.store, false); 
-                };
-                list.appendChild(li);
-            });
-        } else {
-            list.innerHTML = '<li style="padding:10px; color:#666;">Sin resultados.</li>';
-        }
-    }
-
-    function createManualItem() {
-        const text = document.getElementById('search-input').value;
-        if(!text) return;
-        closeAllModals();
-        
-        const currentStore = document.getElementById('store-select').value;
-        const isNumeric = /^\d+$/.test(text);
-
-        let code, name;
-        if (isNumeric) {
-            code = text; name = "";
-        } else {
-            code = 'MAN-' + Date.now(); name = text;
-        }
-
-        openProductModal(code, name, "", currentStore, true);
-    }
-
-    // --- 3. MODAL DE PRODUCTO ---
+    // --- MODALES ---
     function openProductModal(code, name, price, store, isEditableBarcode) {
+        // Reset cantidad siempre a 1 al abrir
+        currentQty = 1;
+        document.getElementById('qty-display').innerText = "1";
+
         document.getElementById('overlay-bg').style.display = 'block';
         document.getElementById('product-modal').style.display = 'block';
         
         const barcodeInput = document.getElementById('modal-barcode');
         barcodeInput.value = code;
         barcodeInput.disabled = !isEditableBarcode;
-        
-        if(isEditableBarcode) {
-            barcodeInput.style.border = "1px solid #2e7d32";
-            barcodeInput.style.backgroundColor = "#fff";
-        } else {
-            barcodeInput.style.border = "1px dashed #ccc";
-            barcodeInput.style.backgroundColor = "#f9f9f9";
-        }
+        barcodeInput.style.border = isEditableBarcode ? "1px solid #2e7d32" : "1px dashed #ccc";
+        barcodeInput.style.backgroundColor = isEditableBarcode ? "#fff" : "#f9f9f9";
 
         document.getElementById('inp-name').value = name;
         document.getElementById('inp-price').value = price;
@@ -387,105 +308,138 @@
         lastScannedCode = null;
     }
 
-    // --- 4. GUARDAR ---
+    // --- GUARDAR ---
     async function saveAndAdd() {
         const name = document.getElementById('inp-name').value;
         const price = parseInt(document.getElementById('inp-price').value);
         const store = document.getElementById('store-select').value;
         const finalBarcode = document.getElementById('modal-barcode').value.trim();
 
-        if (!name || isNaN(price) || !finalBarcode) { 
-            showToast("⚠️ Faltan datos", "alert"); return; 
-        }
+        if (!name || isNaN(price) || !finalBarcode) { showToast("⚠️ Faltan datos", "alert"); return; }
 
         const { error } = await db.from('products').upsert({ barcode: finalBarcode, store: store, name: name, price: price });
 
         if (!error) {
-            addToCart(name, price);
-            showToast(`✅ ${name} agregado`, "success");
+            // Pasamos la cantidad actual al carrito
+            addToCart(name, price, currentQty);
+            const msg = currentQty > 1 ? `✅ Agregados ${currentQty} productos` : `✅ Agregado`;
+            showToast(msg, "success");
             closeAllModals();
         } else {
-            showToast("Error: " + error.message, "alert");
+            showToast("Error BD: " + error.message, "alert");
         }
     }
 
-    // --- 5. CARRITO ---
-    function addToCart(name, price) {
-        total += price;
+    // --- CARRITO ---
+    function addToCart(name, price, qty) {
+        const subtotal = price * qty;
+        total += subtotal;
         updateTotalDisplay();
+        
         const ul = document.getElementById('cart-list');
         const li = document.createElement('li');
         li.className = 'product-item';
-        li.innerHTML = `<div class="item-info"><span class="item-name">${name}</span><span class="item-price">$${price.toLocaleString()}</span></div><button class="btn-delete" onclick="removeFromCart(this, ${price})">×</button>`;
+        
+        // Renderizado inteligente según cantidad
+        const qtyBadge = qty > 1 ? `<span class="item-qty-badge">${qty}x</span>` : '';
+        const displayPrice = qty > 1 ? `$${subtotal.toLocaleString()} <small style='color:#999'>($${price} c/u)</small>` : `$${price.toLocaleString()}`;
+
+        li.innerHTML = `
+            <div class="item-info">
+                <span class="item-name">${qtyBadge} ${name}</span>
+                <span class="item-price">${displayPrice}</span>
+            </div>
+            <button class="btn-delete" onclick="removeFromCart(this, ${subtotal})">×</button>
+        `;
         ul.insertBefore(li, ul.firstChild);
     }
 
-    function removeFromCart(btn, price) {
+    function removeFromCart(btn, subtotal) {
         if(navigator.vibrate) navigator.vibrate(50);
-        total -= price; if(total < 0) total = 0;
+        if(!confirm("¿Borrar item?")) return;
+        
+        total -= subtotal; 
+        if(total < 0) total = 0;
         updateTotalDisplay();
         btn.parentElement.remove();
     }
 
-    function handleStoreChange() {
-        if(total > 0 && confirm("¿Cambiaste de Supermercado? Se vaciará el carrito.")) {
-            total = 0; updateTotalDisplay(); document.getElementById('cart-list').innerHTML = "";
+    function clearCart() {
+        if(total === 0) return;
+        if(confirm("¿Estás seguro de vaciar TODO el carrito?")) {
+            total = 0;
+            updateTotalDisplay();
+            document.getElementById('cart-list').innerHTML = "";
+            showToast("Carrito vaciado");
         }
     }
 
-    // --- ACTUALIZACIÓN DE TOTAL CON ALERTA ---
     function updateTotalDisplay() { 
         const amountEl = document.getElementById('total-amount');
         const boxEl = document.querySelector('.total-box');
         const limitInput = document.getElementById('budget-limit').value;
         
         amountEl.innerText = '$' + total.toLocaleString();
-        
-        // Resetear estilos
         amountEl.className = 'total-price';
         boxEl.className = 'total-box';
         
-        // Verificar meta
         if (limitInput && parseInt(limitInput) > 0) {
             const limit = parseInt(limitInput);
-            
             if (total > limit) {
-                // Pasado del límite
                 amountEl.classList.add('danger');
                 boxEl.classList.add('danger');
-                if(navigator.vibrate) navigator.vibrate([200, 100, 200]); // Vibración fuerte
+                if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
             } else if (total > limit * 0.9) {
-                // Al 90% del límite
                 amountEl.classList.add('warning');
             }
         }
     }
-    
-    function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
 
-    // --- 6. CÁMARA ---
+    // --- UTILS Y BÚSQUEDA ---
+    function handleStoreChange() { if(total > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { clearCart(); } }
+    function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
+    
+    // Búsqueda Manual (Misma lógica anterior)
+    function openSearchModal() { document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('search-modal').style.display = 'block'; document.getElementById('search-input').focus(); }
+    function createManualItem() { /* ... Lógica existente ... */ 
+        const text = document.getElementById('search-input').value; if(!text) return; closeAllModals();
+        const currentStore = document.getElementById('store-select').value;
+        const isNumeric = /^\d+$/.test(text);
+        const code = isNumeric ? text : 'MAN-' + Date.now();
+        const name = isNumeric ? "" : text;
+        openProductModal(code, name, "", currentStore, true);
+    }
+    let debounceTimer;
+    function handleSearchTyping(text) { 
+        const btn = document.getElementById('btn-create-manual');
+        btn.style.display = text.length > 0 ? 'block' : 'none';
+        if(text.length > 0) btn.innerText = /^\d+$/.test(text) ? `➕ Registrar: ${text}` : `➕ Crear: "${text}"`;
+        clearTimeout(debounceTimer); debounceTimer = setTimeout(() => searchInDB(text), 300); 
+    }
+    async function searchInDB(text) {
+        if(text.length < 2) return;
+        let query = db.from('products').select('*').limit(5);
+        if (/^\d+$/.test(text)) query = query.ilike('barcode', `${text}%`); else query = query.ilike('name', `%${text}%`);
+        let { data: results } = await query;
+        const list = document.getElementById('search-results'); list.innerHTML = '';
+        if(results?.length) {
+            results.forEach(p => {
+                const li = document.createElement('li'); li.className = 'search-result-item';
+                li.innerHTML = `<div><span>${p.name}</span><br><small style="color:#888">${p.barcode}</small></div><b>$${p.price}</b>`;
+                li.onclick = () => { closeAllModals(); openProductModal(p.barcode, p.name, p.price, p.store, false); };
+                list.appendChild(li);
+            });
+        } else { list.innerHTML = '<li style="padding:10px;color:#666">Sin resultados</li>'; }
+    }
+
+    // --- CÁMARA ---
     function startScanner() {
         document.getElementById('scanner-container').style.display = 'block';
         html5QrCode = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 150 }, formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ] };
-        
-        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-        .catch(err => { 
-            console.warn("Fallo trasera", err);
-            html5QrCode.start({ facingMode: "user" }, config, onScanSuccess); 
-        });
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 }, formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ] }, onScanSuccess)
+        .catch(err => html5QrCode.start({ facingMode: "user" }, { fps: 10, qrbox: 250 }, onScanSuccess));
     }
-
-    function stopScanner() {
-        if(html5QrCode) {
-            html5QrCode.stop().then(() => {
-                document.getElementById('scanner-container').style.display = 'none';
-                html5QrCode.clear();
-            }).catch(err => console.error("Error stop", err));
-        } else {
-            document.getElementById('scanner-container').style.display = 'none';
-        }
-    }
+    function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-container').style.display = 'none'; html5QrCode.clear(); }).catch(e=>console.error(e)); else document.getElementById('scanner-container').style.display = 'none'; }
 </script>
 
 </body>
