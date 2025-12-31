@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Precios Pro V11</title>
+    <title>Scanner Precios Pro V12</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -21,8 +21,18 @@
             background-color: #2e7d32; padding: 10px; display: flex; flex-direction: column; 
             align-items: center; position: sticky; top: 0; z-index: 10; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+            transition: background-color 0.3s;
         }
+        /* Estilo para header offline */
+        header.offline { background-color: #455a64; }
+
         h1 { margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 5px; font-weight: normal; }
+        
+        /* Indicador de Conexión */
+        #connection-status {
+            font-size: 0.75rem; color: white; background: rgba(0,0,0,0.2); 
+            padding: 2px 8px; border-radius: 10px; margin-bottom: 5px; display: none;
+        }
         
         #store-select {
             font-size: 1.1rem; padding: 8px 12px; border-radius: 8px; border: none; 
@@ -126,7 +136,7 @@
         }
         #qty-display { font-size: 1.5rem; font-weight: bold; min-width: 30px; text-align: center; }
 
-        /* NUEVO: ALERTA DE PRECIO (Estilos V10) */
+        /* ALERTA DE PRECIO */
         .price-alert {
             display: none; padding: 12px; margin-bottom: 15px; border-radius: 8px; 
             font-size: 0.9rem; line-height: 1.4; border: 1px solid transparent;
@@ -149,7 +159,8 @@
 </head>
 <body>
 
-<header>
+<header id="app-header">
+    <div id="connection-status">📡 Modo Offline</div>
     <h1>Estás en:</h1>
     <select id="store-select" onchange="handleStoreChange()">
         <option value="lider">🔵 Lider</option>
@@ -200,14 +211,13 @@
     <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="closeAllModals()">Cerrar</button>
 </div>
 
-<!-- MODAL PRODUCTO (Con Alerta de Precios V10) -->
+<!-- MODAL PRODUCTO -->
 <div id="product-modal" class="modal">
     <div class="modal-header">
         <strong>📝 Detalle Producto</strong>
         <span id="store-badge" style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;"></span>
     </div>
     
-    <!-- ÁREA DE ALERTA DE PRECIOS -->
     <div id="comparison-alert" class="price-alert"></div>
     
     <label style="font-size:0.8rem; color:#666;">Código:</label>
@@ -247,7 +257,86 @@
     let lastScannedCode = null;
     let isProcessing = false;
     let html5QrCode = null;
-    let currentQty = 1; 
+    let currentQty = 1;
+    
+    // --- LÓGICA OFFLINE / ONLINE ---
+    let isOnline = navigator.onLine;
+
+    window.addEventListener('online', () => {
+        isOnline = true;
+        updateConnectionStatus();
+        syncOfflineData(); // Sincronizar al volver
+        showToast("Conexión restaurada 🌐", "success");
+    });
+
+    window.addEventListener('offline', () => {
+        isOnline = false;
+        updateConnectionStatus();
+        showToast("Modo Offline activado 📡", "normal");
+    });
+
+    function updateConnectionStatus() {
+        const header = document.getElementById('app-header');
+        const badge = document.getElementById('connection-status');
+        if(isOnline) {
+            header.classList.remove('offline');
+            badge.style.display = 'none';
+        } else {
+            header.classList.add('offline');
+            badge.style.display = 'inline-block';
+        }
+    }
+    
+    // Al cargar la página
+    updateConnectionStatus();
+
+    // --- ALMACENAMIENTO LOCAL (Offline) ---
+    const CACHE_KEY = 'scanner_pro_products';
+    const QUEUE_KEY = 'scanner_pro_queue';
+
+    function getLocalCache() {
+        return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+    }
+
+    function saveToLocalCache(product) {
+        const cache = getLocalCache();
+        // Clave única: CODIGO_TIENDA
+        const key = `${product.barcode}_${product.store}`;
+        cache[key] = product;
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    }
+
+    function addToSyncQueue(product) {
+        const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+        queue.push(product);
+        localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    }
+
+    async function syncOfflineData() {
+        const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+        if (queue.length === 0) return;
+
+        showToast(`Sincronizando ${queue.length} cambios...`);
+        
+        // Procesamos la cola
+        const remainingQueue = [];
+        for (const item of queue) {
+            const { error } = await db.from('products').upsert(item);
+            if (error) {
+                console.error("Error sync:", error);
+                remainingQueue.push(item); // Si falla, lo guardamos para el próximo intento
+            }
+        }
+
+        localStorage.setItem(QUEUE_KEY, JSON.stringify(remainingQueue));
+        
+        if (remainingQueue.length === 0) {
+            showToast("Sincronización completa ✅", "success");
+        } else {
+            showToast("Algunos datos pendientes...", "normal");
+        }
+    }
+
 
     // --- ESCANEO ---
     async function onScanSuccess(decodedText) {
@@ -262,72 +351,86 @@
         const currentStore = document.getElementById('store-select').value;
         if(!isManualCreation) showToast(`🔍 Buscando...`);
 
-        try {
-            let { data: product } = await db.from('products').select('*').eq('barcode', code).eq('store', currentStore).single();
-            
-            if (product) {
-                openProductModal(code, product.name, product.price, currentStore, false);
-            } else {
-                let { data: other } = await db.from('products').select('name').eq('barcode', code).limit(1).maybeSingle();
-                const suggested = other ? other.name : "";
-                openProductModal(code, suggested, "", currentStore, isManualCreation);
+        // ESTRATEGIA: Intentar Nube primero, caer a Local si falla
+        let product = null;
+
+        if (isOnline) {
+            try {
+                let { data } = await db.from('products').select('*').eq('barcode', code).eq('store', currentStore).single();
+                product = data;
+                
+                // Si encontramos en la nube, actualizamos caché local para el futuro
+                if(product) saveToLocalCache(product);
+
+            } catch (err) {
+                console.warn("Fallo red, buscando local...");
             }
-        } catch (err) {
-            console.error(err);
-            showToast("Error de conexión", "alert");
-            isProcessing = false;
+        }
+
+        // Si no hay producto (porque es offline o error), buscamos en caché
+        if (!product) {
+            const cache = getLocalCache();
+            const key = `${code}_${currentStore}`;
+            product = cache[key];
+        }
+
+        if (product) {
+            openProductModal(code, product.name, product.price, currentStore, false);
+        } else {
+            // Producto Nuevo (o no encontrado)
+            // Intentar buscar nombre sugerido (Solo si estamos online por ahora)
+            let suggested = "";
+            if (isOnline) {
+                let { data: other } = await db.from('products').select('name').eq('barcode', code).limit(1).maybeSingle();
+                suggested = other ? other.name : "";
+            }
+            openProductModal(code, suggested, "", currentStore, isManualCreation);
         }
     }
 
-    // --- MANEJO DE CANTIDAD ---
     function adjustQty(delta) {
         currentQty += delta;
         if(currentQty < 1) currentQty = 1;
         document.getElementById('qty-display').innerText = currentQty;
     }
 
-    // --- COMPARADOR DE PRECIOS (Inteligencia Cruzada V10) ---
     async function checkCrossStorePrice(code, currentStore, currentPrice) {
+        if (!isOnline) return; // Sin internet no comparamos
+
         const alertBox = document.getElementById('comparison-alert');
-        alertBox.style.display = 'none'; // Reiniciar
+        alertBox.style.display = 'none'; 
         alertBox.className = 'price-alert';
 
-        // Buscar el precio más bajo en OTROS supermercados
         const { data: bestOption } = await db
             .from('products')
             .select('store, price, updated_at')
             .eq('barcode', code)
-            .neq('store', currentStore) // Diferente al actual
-            .order('price', { ascending: true }) // El más barato primero
+            .neq('store', currentStore)
+            .order('price', { ascending: true })
             .limit(1)
             .maybeSingle();
 
         if (bestOption) {
-            // Caso 1: Tenemos precio actual y encontramos uno más barato fuera
             if (currentPrice && bestOption.price < currentPrice) {
                 const diff = currentPrice - bestOption.price;
-                alertBox.innerHTML = `⚠️ <b>¡Está más barato en ${bestOption.store.toUpperCase()}!</b><br>Allá cuesta $${bestOption.price}. Te ahorrarías $${diff} por unidad.`;
+                alertBox.innerHTML = `⚠️ <b>¡Más barato en ${bestOption.store.toUpperCase()}!</b><br>Allá cuesta $${bestOption.price}. Ahorras $${diff}.`;
                 alertBox.classList.add('cheaper');
                 alertBox.style.display = 'block';
             }
-            // Caso 2: No tenemos precio actual (Producto Nuevo), mostramos referencia
             else if (!currentPrice) {
-                alertBox.innerHTML = `ℹ️ <b>Referencia de precio:</b><br>El mejor precio registrado es $${bestOption.price} en ${bestOption.store.toUpperCase()}.`;
+                alertBox.innerHTML = `ℹ️ <b>Referencia:</b><br>Mejor precio: $${bestOption.price} en ${bestOption.store.toUpperCase()}.`;
                 alertBox.classList.add('info');
                 alertBox.style.display = 'block';
             }
         }
     }
 
-    // --- MODALES ---
     function openProductModal(code, name, price, store, isEditableBarcode) {
         currentQty = 1;
         document.getElementById('qty-display').innerText = "1";
-
         document.getElementById('overlay-bg').style.display = 'block';
         document.getElementById('product-modal').style.display = 'block';
         
-        // Ejecutar Comparador (Asíncrono - No bloquea la UI)
         checkCrossStorePrice(code, store, price);
 
         const barcodeInput = document.getElementById('modal-barcode');
@@ -349,12 +452,12 @@
         document.getElementById('overlay-bg').style.display = 'none';
         document.getElementById('product-modal').style.display = 'none';
         document.getElementById('search-modal').style.display = 'none';
-        document.getElementById('comparison-alert').style.display = 'none'; // Limpiar alerta
+        document.getElementById('comparison-alert').style.display = 'none';
         isProcessing = false;
         lastScannedCode = null;
     }
 
-    // --- GUARDAR ---
+    // --- GUARDAR (Con soporte Offline) ---
     async function saveAndAdd() {
         const name = document.getElementById('inp-name').value;
         const price = parseInt(document.getElementById('inp-price').value);
@@ -363,16 +466,33 @@
 
         if (!name || isNaN(price) || !finalBarcode) { showToast("⚠️ Faltan datos", "alert"); return; }
 
-        const { error } = await db.from('products').upsert({ barcode: finalBarcode, store: store, name: name, price: price });
+        const productData = { barcode: finalBarcode, store: store, name: name, price: price };
 
-        if (!error) {
-            addToCart(name, price, currentQty);
-            const msg = currentQty > 1 ? `✅ Agregados ${currentQty} productos` : `✅ Agregado`;
-            showToast(msg, "success");
-            closeAllModals();
+        // 1. Guardar siempre en caché local (para uso inmediato)
+        saveToLocalCache(productData);
+
+        // 2. Decidir dónde guardar (Nube o Cola)
+        if (isOnline) {
+            const { error } = await db.from('products').upsert(productData);
+            if (!error) {
+                finalizeSave(name, price, currentQty);
+            } else {
+                // Fallback si falla la petición aunque parezca haber internet
+                addToSyncQueue(productData);
+                finalizeSave(name, price, currentQty, true);
+            }
         } else {
-            showToast("Error BD: " + error.message, "alert");
+            // Modo Offline
+            addToSyncQueue(productData);
+            finalizeSave(name, price, currentQty, true);
         }
+    }
+
+    function finalizeSave(name, price, qty, offlineMode = false) {
+        addToCart(name, price, qty);
+        const msg = offlineMode ? "Guardado en local 📡" : "Guardado exitoso ✅";
+        showToast(msg, "success");
+        closeAllModals();
     }
 
     // --- CARRITO ---
@@ -417,10 +537,8 @@
         const amountEl = document.getElementById('total-amount');
         const boxEl = document.querySelector('.total-box');
         const limitInput = document.getElementById('budget-limit').value;
-        
         amountEl.innerText = '$' + total.toLocaleString();
-        amountEl.className = 'total-price';
-        boxEl.className = 'total-box';
+        amountEl.className = 'total-price'; boxEl.className = 'total-box';
         
         if (limitInput && parseInt(limitInput) > 0) {
             const limit = parseInt(limitInput);
@@ -433,7 +551,6 @@
         }
     }
 
-    // --- UTILS Y BÚSQUEDA ---
     function handleStoreChange() { if(total > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { clearCart(); } }
     function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
     
@@ -454,18 +571,32 @@
         if(text.length > 0) btn.innerText = /^\d+$/.test(text) ? `➕ Registrar: ${text}` : `➕ Crear: "${text}"`;
         clearTimeout(debounceTimer); debounceTimer = setTimeout(() => searchInDB(text), 300); 
     }
-    
-    // --- FUNCIÓN DE BÚSQUEDA MEJORADA (MUESTRA LA TIENDA) ---
     async function searchInDB(text) {
         if(text.length < 2) return;
+        
+        // Búsqueda Offline (Local) primero si no hay internet
+        if (!isOnline) {
+             const cache = getLocalCache();
+             const results = Object.values(cache).filter(p => 
+                 p.name.toLowerCase().includes(text.toLowerCase()) || 
+                 p.barcode.startsWith(text)
+             );
+             renderSearchResults(results);
+             return;
+        }
+
+        // Búsqueda Online
         let query = db.from('products').select('*').limit(5);
         if (/^\d+$/.test(text)) query = query.ilike('barcode', `${text}%`); else query = query.ilike('name', `%${text}%`);
         let { data: results } = await query;
+        renderSearchResults(results);
+    }
+
+    function renderSearchResults(results) {
         const list = document.getElementById('search-results'); list.innerHTML = '';
         if(results?.length) {
             results.forEach(p => {
                 const li = document.createElement('li'); li.className = 'search-result-item';
-                // AQUÍ ESTÁ EL CAMBIO: Se agrega el supermercado (store) en verde
                 li.innerHTML = `
                     <div style="flex-grow:1; margin-right:10px;">
                         <span style="font-weight:600; display:block; line-height:1.2;">${p.name}</span>
