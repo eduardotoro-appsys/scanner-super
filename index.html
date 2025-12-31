@@ -3,154 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Supermercado MVP</title>
+    <title>Scanner Supermercado Real</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; color: #333; }
-        header { background-color: #6200ea; color: white; padding: 15px; text-align: center; }
-        h1 { margin: 0; font-size: 1.2rem; }
-        
+        body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
+        header { background-color: #2e7d32; color: white; padding: 15px; text-align: center; }
         #scanner-container { width: 100%; max-width: 500px; margin: 0 auto; background: black; }
-        
-        /* Contenedor de resultados */
         .dashboard { padding: 15px; max-width: 500px; margin: 0 auto; }
-        
-        .total-box {
-            background-color: #fff;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            text-align: center;
-            margin-bottom: 20px;
-        }
+        .total-box { background-color: #fff; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;}
         .total-price { font-size: 2rem; font-weight: bold; color: #2e7d32; }
-        
-        .product-list { list-style: none; padding: 0; }
-        .product-item {
-            background: white;
-            border-bottom: 1px solid #eee;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .product-info { font-size: 0.9rem; }
-        .product-price { font-weight: bold; }
-        
-        .scan-msg { text-align: center; font-size: 0.8rem; color: #666; margin-top: 10px; }
-        
-        /* Botonera */
-        .controls { text-align: center; margin: 10px; }
-        button {
-            padding: 10px 20px; font-size: 1rem; background-color: #6200ea; color: white; border: none; border-radius: 5px; cursor: pointer;
-        }
-        button:disabled { background-color: #ccc; }
+        .product-item { background: white; border-bottom: 1px solid #eee; padding: 10px; display: flex; justify-content: space-between; }
+        button { padding: 10px 20px; background-color: #2e7d32; color: white; border: none; border-radius: 5px; width: 100%; margin-top: 10px;}
     </style>
 </head>
 <body>
 
-<header>
-    <h1>🛒 Mi Super Scanner</h1>
-</header>
+<header><h1>🛒 Scanner Cloud</h1></header>
 
 <div id="scanner-container">
     <div id="reader" style="width: 100%;"></div>
 </div>
 
-<div class="controls">
-    <button id="start-btn" onclick="startScanner()">📷 Iniciar Cámara</button>
-    <p class="scan-msg">Apunta al código de barras</p>
-</div>
-
 <div class="dashboard">
+    <button id="start-btn" onclick="startScanner()">📷 Iniciar Cámara</button>
+    <div id="status" style="text-align: center; margin: 10px; color: #666;">Listo para escanear...</div>
+
     <div class="total-box">
         <div>Total Estimado</div>
         <div class="total-price" id="total-amount">$0</div>
     </div>
-
-    <h3>Carrito:</h3>
-    <ul class="product-list" id="cart-list">
-        </ul>
+    <ul id="cart-list" style="list-style: none; padding: 0;"></ul>
 </div>
 
 <script>
-    let html5QrcodeScanner;
+    // --- CONFIGURACIÓN DE SUPABASE (¡CAMBIA ESTO!) ---
+    const SUPABASE_URL = 'AQUI_TU_URL_DE_SUPABASE';
+    const SUPABASE_KEY = 'AQUI_TU_KEY_ANON_DE_SUPABASE';
+    
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // --------------------------------------------------
+
     let total = 0;
     let lastScannedCode = null;
-    let lastScannedTime = 0;
+    let isProcessing = false;
 
-    // Simulación de base de datos de productos conocidos
-    const mockDatabase = {
-        "7801610002545": { name: "Coca Cola 1.5L", price: 1800 },
-        "7802800534032": { name: "Arroz Grado 2", price: 1200 },
-        "7791293022234": { name: "Galletas Oreo", price: 950 }
-    };
-
-    function onScanSuccess(decodedText, decodedResult) {
-        const currentTime = new Date().getTime();
+    async function onScanSuccess(decodedText, decodedResult) {
+        if (isProcessing || decodedText === lastScannedCode) return;
         
-        // Evitar escaneos dobles muy rápidos (esperar 2 segundos entre el mismo código)
-        if (decodedText === lastScannedCode && (currentTime - lastScannedTime < 2000)) {
-            return;
-        }
-
+        isProcessing = true;
         lastScannedCode = decodedText;
-        lastScannedTime = currentTime;
+        document.getElementById('status').innerText = "Buscando precio...";
 
-        // Buscar en "Base de Datos" o Inventar si es nuevo
-        let product = mockDatabase[decodedText];
-        
-        if (!product) {
-            // Si el código no existe, simulamos que es un producto nuevo
-            product = {
-                name: `Producto Nuevo (${decodedText.substring(0,4)}...)`,
-                price: Math.floor(Math.random() * (5000 - 500) + 500) // Precio aleatorio
-            };
+        try {
+            // 1. Buscar en Supabase
+            let { data: products, error } = await supabase
+                .from('products')
+                .select('*')
+                .eq('barcode', decodedText)
+                .single();
+
+            if (products) {
+                // PRODUCTO EXISTE
+                addToCart(products.name, products.price);
+                alert(`✅ Encontrado: ${products.name} a $${products.price}`);
+            } else {
+                // PRODUCTO NUEVO (No existe)
+                let priceInput = prompt(`Producto Nuevo (${decodedText}).\nIngrese el PRECIO:`);
+                if (priceInput) {
+                    let nameInput = prompt("Ingrese el NOMBRE del producto:");
+                    let price = parseInt(priceInput);
+                    
+                    if (nameInput && !isNaN(price)) {
+                        // Guardar en Supabase para el futuro
+                        await supabase.from('products').insert([
+                            { barcode: decodedText, name: nameInput, price: price }
+                        ]);
+                        addToCart(nameInput, price);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error de conexión");
         }
 
-        addProductToCart(product);
-        alert(`¡Escaneado! ${product.name}`); // Feedback simple
+        // Pausa breve antes de permitir otro escaneo
+        setTimeout(() => { isProcessing = false; lastScannedCode = null; document.getElementById('status').innerText = "Listo..."; }, 2000);
     }
 
-    function addProductToCart(product) {
-        total += product.price;
-        
-        // Actualizar Total Visual
+    function addToCart(name, price) {
+        total += price;
         document.getElementById('total-amount').innerText = '$' + total.toLocaleString();
-
-        // Agregar a la lista visual
+        
         const ul = document.getElementById('cart-list');
         const li = document.createElement('li');
         li.className = 'product-item';
-        li.innerHTML = `
-            <div class="product-info">
-                <strong>${product.name}</strong><br>
-                <small>Cant: 1</small>
-            </div>
-            <div class="product-price">$${product.price}</div>
-        `;
-        // Insertar al principio
+        li.innerHTML = `<span>${name}</span> <strong>$${price}</strong>`;
         ul.insertBefore(li, ul.firstChild);
-    }
-
-    function onScanFailure(error) {
-        // La librería falla constantemente cuando no ve un código, es normal.
-        // No hacemos nada para no llenar la consola.
     }
 
     function startScanner() {
         const html5QrCode = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        
-        // Preferir cámara trasera (environment)
-        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
-        .then(() => {
-            document.getElementById('start-btn').style.display = 'none';
-            document.querySelector('.scan-msg').innerText = "Escáner activo...";
-        })
-        .catch(err => {
-            alert("Error al iniciar cámara: " + err);
-        });
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess);
+        document.getElementById('start-btn').style.display = 'none';
     }
 </script>
 
