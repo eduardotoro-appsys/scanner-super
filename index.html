@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V20</title>
+    <title>Scanner Pro V21</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -116,6 +116,12 @@
         .item-qty-badge { background: #2e7d32; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-right: 5px; }
         .btn-delete { background: #ffcdd2; color: #c62828; border: none; padding: 8px 12px; border-radius: 6px; margin-left: 10px; cursor: pointer; font-size: 1.2rem; }
 
+        /* Estilos de Estado en Historial */
+        .status-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px; text-transform: uppercase; }
+        .status-badge.approved { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .status-badge.rejected { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .status-badge.pending { background: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
+
         .modal { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 25px 20px; border-radius: 20px 20px 0 0; z-index: 101; box-shadow: 0 -4px 30px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         
@@ -164,7 +170,6 @@
     <header id="app-header">
         <div class="top-bar">
             <div id="connection-status" class="connection-badge">📡 Offline</div>
-            <!-- BOTÓN SYNC NUEVO -->
             <button id="sync-btn" class="sync-btn" onclick="syncOfflineData()">☁️ Al día</button>
             <div class="user-profile" id="user-profile"></div>
         </div>
@@ -260,13 +265,13 @@
     </div>
 </div>
 
-<!-- MODAL HISTORIAL -->
+<!-- MODAL HISTORIAL (CON STATUS) -->
 <div id="history-modal" class="modal" style="z-index: 200;">
     <div class="modal-header">
-        <strong>📉 Historial de Precios</strong>
+        <strong>📉 Historial de Reportes</strong>
         <button onclick="document.getElementById('history-modal').style.display='none'" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">×</button>
     </div>
-    <div style="font-size:0.8rem; color:#666; margin-bottom:10px;">Últimos cambios registrados:</div>
+    <div style="font-size:0.8rem; color:#666; margin-bottom:10px;">Auditando últimos cambios:</div>
     <ul id="history-list" class="product-list" style="max-height: 300px; overflow-y: auto;">
         <li style="padding:10px; color:#666;">Cargando...</li>
     </ul>
@@ -277,7 +282,7 @@
 
 <script>
     // ==========================================
-    // ⚠️ ATENCIÓN: PEGA TUS CLAVES AQUÍ ABAJO
+    // ⚠️ IMPORTANTE: PEGA TUS CLAVES AQUÍ
     // ==========================================
     const SUPABASE_URL = 'https://hviansyzbyzkfdmgujah.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2aWFuc3l6Ynl6a2ZkbWd1amFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMTA0OTAsImV4cCI6MjA4Mjc4NjQ5MH0.1_vn4udmbsQkKRrTMiRFatpfqtRyiq_5VBgdsKjJwW8';
@@ -324,23 +329,17 @@
     window.addEventListener('offline', () => { isOnline = false; updateConnectionStatus(); showToast("Modo Offline activado 📡", "normal"); });
     updateConnectionStatus();
 
-    // Actualiza indicador de conexión y de sync
     function updateConnectionStatus() {
         const badge = document.getElementById('connection-status');
         if(isOnline) { badge.style.display = 'none'; } else { badge.style.display = 'inline-block'; }
-        updateSyncUI(); // Refrescar botón de sync
+        updateSyncUI(); 
     }
     
     function updateSyncUI() {
         const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
         const btn = document.getElementById('sync-btn');
-        if (queue.length > 0) {
-            btn.className = 'sync-btn pending';
-            btn.innerHTML = `☁️ ${queue.length} Pendientes`;
-        } else {
-            btn.className = 'sync-btn ok';
-            btn.innerHTML = `☁️ Al día`;
-        }
+        if (queue.length > 0) { btn.className = 'sync-btn pending'; btn.innerHTML = `☁️ ${queue.length} Pendientes`; } 
+        else { btn.className = 'sync-btn ok'; btn.innerHTML = `☁️ Al día`; }
     }
     
     function getLocalCache() { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
@@ -348,27 +347,14 @@
     function addToSyncQueue(product) { const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); queue.push(product); localStorage.setItem(QUEUE_KEY, JSON.stringify(queue)); updateSyncUI(); }
     
     async function syncOfflineData() {
-        const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); 
-        if (queue.length === 0) { showToast("Nada que sincronizar"); return; }
-        
-        showToast(`Sincronizando ${queue.length} cambios...`); 
-        const remainingQueue = [];
-        
+        const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); if (queue.length === 0) { showToast("Nada que sincronizar"); return; }
+        showToast(`Sincronizando ${queue.length} cambios...`); const remainingQueue = [];
         for (const item of queue) { 
             const { error } = await db.from('price_reports').insert(item); 
-            if (error) {
-                console.error("Error Sync:", error);
-                // Si el error es grave (no es de conexión), mostramos alerta
-                if (error.code) showToast("Error: " + error.message, "alert");
-                remainingQueue.push(item);
-            }
+            if (error) { console.error("Error Sync:", error); if (error.code) showToast("Error: " + error.message, "alert"); remainingQueue.push(item); }
         }
-        
-        localStorage.setItem(QUEUE_KEY, JSON.stringify(remainingQueue)); 
-        updateSyncUI();
-        
-        if (remainingQueue.length === 0) showToast("Sincronización completa ✅", "success");
-        else showToast(`${remainingQueue.length} items fallaron`, "alert");
+        localStorage.setItem(QUEUE_KEY, JSON.stringify(remainingQueue)); updateSyncUI();
+        if (remainingQueue.length === 0) showToast("Sincronización completa ✅", "success"); else showToast(`${remainingQueue.length} items fallaron`, "alert");
     }
 
     async function onScanSuccess(decodedText) { if (isProcessing || decodedText === lastScannedCode) return; isProcessing = true; lastScannedCode = decodedText; stopScanner(); checkProductInDB(decodedText, false); }
@@ -403,17 +389,34 @@
         }
     }
 
+    // --- HISTORIAL CON ESTADO ---
     async function openHistoryModal() {
         const barcode = document.getElementById('modal-barcode').value; if(!barcode) return;
         document.getElementById('history-modal').style.display = 'block';
         const list = document.getElementById('history-list'); list.innerHTML = '<li>Cargando historial...</li>';
-        const { data, error } = await db.from('price_history').select('*').eq('barcode', barcode).order('created_at', { ascending: false });
-        if(error || !data || data.length === 0) { list.innerHTML = '<li style="padding:15px; text-align:center;">No hay historial aún.</li>'; return; }
+        
+        // AHORA CONSULTAMOS LA TABLA DE REPORTES PARA VER EL ESTADO DEL JUEZ
+        const { data, error } = await db.from('price_reports').select('*').eq('barcode', barcode).order('created_at', { ascending: false }).limit(20);
+        
+        if(error || !data || data.length === 0) { list.innerHTML = '<li style="padding:15px; text-align:center;">No hay reportes aún.</li>'; return; }
+        
         list.innerHTML = '';
         data.forEach(item => {
             const date = new Date(item.created_at).toLocaleDateString();
+            const statusClass = item.status === 'approved' ? 'approved' : (item.status === 'rejected' ? 'rejected' : 'pending');
+            const statusLabel = item.status === 'approved' ? 'Aceptado' : (item.status === 'rejected' ? 'Rechazado' : 'Pendiente');
+            
             const li = document.createElement('li'); li.className = 'product-item';
-            li.innerHTML = `<div><strong>$${item.price}</strong> <span style="font-size:0.8rem; color:#666;">en ${item.store.toUpperCase()}</span><br><small style="color:#999">${date}</small></div>`;
+            li.innerHTML = `
+                <div style="width:100%">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>$${item.price}</strong> 
+                        <span class="status-badge ${statusClass}">${statusLabel}</span>
+                    </div>
+                    <span style="font-size:0.8rem; color:#666;">en ${item.store.toUpperCase()}</span><br>
+                    <small style="color:#999">${date}</small>
+                </div>
+            `;
             list.appendChild(li);
         });
     }
@@ -452,7 +455,6 @@
                 finalizeSave(productData, currentQty); 
             } else { 
                 console.error("Error insert:", error); 
-                // MOSTRAR ERROR REAL AL USUARIO PARA DEBUG
                 showToast(`Error Nube: ${error.message || error.code}`, "alert");
                 addToSyncQueue(productData); 
                 finalizeSave(productData, currentQty, true); 
@@ -464,10 +466,7 @@
 
     function finalizeSave(product, qty, offlineMode = false) { 
         addToCart(product, qty); 
-        // Solo mostramos "Guardado en local" si fue offline puro, si fue error, ya mostramos el error arriba
-        if (offlineMode && isOnline) {
-            // Ya mostramos el toast de error en saveAndAdd
-        } else {
+        if (offlineMode && isOnline) { } else {
             const msg = offlineMode ? "Guardado en local 📡" : "Guardado exitoso ✅";
             showToast(msg, offlineMode ? "normal" : "success"); 
         }
