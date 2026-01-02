@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V17</title>
+    <title>Scanner Pro V17.1</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -53,11 +53,7 @@
             display: flex; align-items: center; gap: 8px;
         }
         .user-avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; }
-        .btn-logout { 
-            background: rgba(0,0,0,0.3); color: white; border: none; 
-            padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;
-        }
-
+        
         #connection-status {
             font-size: 0.7rem; color: white; background: rgba(0,0,0,0.2); 
             padding: 2px 8px; border-radius: 10px; margin-bottom: 4px; display: none;
@@ -136,6 +132,8 @@
         
         #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 200; left: 50%; bottom: 30px; opacity: 0; transition: opacity 0.5s, bottom 0.5s; font-weight: 500; }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+        #toast.success { background-color: #2e7d32; }
+        #toast.alert { background-color: #d32f2f; }
         #overlay-bg { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 100; }
     </style>
 </head>
@@ -266,7 +264,6 @@
     try {
         db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } catch(e) {
-        // Fallará silenciosamente si las claves son placeholders, pero ya no bloqueará.
         console.error("Error init Supabase:", e);
     }
 
@@ -277,17 +274,14 @@
     let html5QrCode = null;
     let currentQty = 1;
     let isOnline = navigator.onLine;
-    let currentUser = null; // Almacenar usuario logueado
+    let currentUser = null; 
 
-    // --- AUTENTICACIÓN MEJORADA ---
-    // Usamos onAuthStateChange para detectar el login al volver de Google
+    // --- AUTENTICACIÓN ---
     if (db) {
         db.auth.onAuthStateChange((event, session) => {
-            console.log("Auth Event:", event);
             if (session) {
                 handleLoginSuccess(session.user);
             } else {
-                // Si no hay sesión, mostramos login
                 document.getElementById('login-screen').style.display = 'flex';
                 document.getElementById('app-content').style.display = 'none';
             }
@@ -296,33 +290,20 @@
 
     async function signInWithGoogle() {
         try {
-            // Construimos la URL actual limpia (sin hashes raros)
-            // IMPORTANTE: Asegúrate de que ESTA URL esté en "Redirect URLs" en Supabase
             const redirectURL = window.location.origin + window.location.pathname;
-            console.log("Redirigiendo a:", redirectURL);
-
             const { data, error } = await db.auth.signInWithOAuth({
                 provider: 'google',
-                options: {
-                    redirectTo: redirectURL
-                }
+                options: { redirectTo: redirectURL }
             });
-            
-            if (error) {
-                console.error("Error Auth:", error);
-                alert("Error de autenticación: " + error.message);
-            }
+            if (error) alert("Error de autenticación: " + error.message);
         } catch (e) {
-            console.error("Excepción Login:", e);
             alert("Error crítico al intentar loguear: " + e.message);
         }
     }
 
     async function signOut() {
         const { error } = await db.auth.signOut();
-        if (!error) {
-            window.location.reload(); // Recargar para volver al login
-        }
+        if (!error) window.location.reload();
     }
 
     function handleLoginSuccess(user) {
@@ -330,16 +311,13 @@
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app-content').style.display = 'block';
         
-        // Mostrar perfil
         const profileDiv = document.getElementById('user-profile');
         const avatarUrl = user.user_metadata.avatar_url || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
-        profileDiv.innerHTML = `
-            <img src="${avatarUrl}" class="user-avatar" onclick="if(confirm('¿Cerrar sesión?')) signOut()">
-        `;
+        profileDiv.innerHTML = `<img src="${avatarUrl}" class="user-avatar" onclick="if(confirm('¿Cerrar sesión?')) signOut()">`;
         showToast(`Hola, ${user.user_metadata.full_name.split(' ')[0]} 👋`);
     }
 
-    // --- EL RESTO DEL CÓDIGO (Igual a V16) ---
+    // --- LÓGICA CORE ---
     const CATEGORIES = { 'frutas': '🥦 Frutas y Verduras', 'carnes': '🥩 Carnes y Pescados', 'lacteos': '🧀 Lácteos y Huevos', 'panaderia': '🍞 Panadería y Pastelería', 'despensa': '🥫 Despensa', 'bebidas': '🥤 Bebidas', 'alcohol': '🍷 Cervezas y Licores', 'snack': '🍪 Snacks y Dulces', 'aseo': '🧹 Limpieza y Aseo', 'personal': '🧴 Cuidado Personal', 'mascotas': '🐶 Mascotas', 'hogar': '🏠 Hogar', 'otros': '📦 Otros' };
     const CAT_ORDER = ["frutas", "carnes", "lacteos", "panaderia", "despensa", "bebidas", "alcohol", "snack", "aseo", "personal", "mascotas", "hogar", "otros"];
     const CACHE_KEY = 'scanner_pro_products';
@@ -428,10 +406,9 @@
         const finalBarcode = document.getElementById('modal-barcode').value.trim();
         if (!name || isNaN(price) || !finalBarcode) { showToast("⚠️ Faltan datos", "alert"); return; }
         
-        // AGREGAR USER_ID SI ESTÁ LOGUEADO
         const productData = { 
             barcode: finalBarcode, store: store, name: name, price: price, category: category,
-            updated_by: currentUser ? currentUser.id : null // Guardamos quien editó
+            updated_by: currentUser ? currentUser.id : null 
         };
 
         saveToLocalCache(productData);
@@ -469,13 +446,41 @@
 
     function updateTotalDisplay() { const amountEl = document.getElementById('total-amount'); const boxEl = document.querySelector('.total-box'); const limitInput = document.getElementById('budget-limit').value; amountEl.innerText = '$' + total.toLocaleString(); amountEl.className = 'total-price'; boxEl.className = 'total-box'; if (limitInput && parseInt(limitInput) > 0) { const limit = parseInt(limitInput); if (total > limit) { amountEl.classList.add('danger'); boxEl.classList.add('danger'); if(navigator.vibrate) navigator.vibrate([200, 100, 200]); } else if (total > limit * 0.9) amountEl.classList.add('warning'); } }
     function handleStoreChange() { if(cart.length > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { clearCart(); } }
+    
     function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
+    
     function openSearchModal() { document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('search-modal').style.display = 'block'; document.getElementById('search-input').focus(); }
     function createManualItem() { const text = document.getElementById('search-input').value; if(!text) return; closeAllModals(); const currentStore = document.getElementById('store-select').value; const isNumeric = /^\d+$/.test(text); const code = isNumeric ? text : 'MAN-' + Date.now(); const name = isNumeric ? "" : text; openProductModal(code, name, "", currentStore, true); }
     let debounceTimer;
     function handleSearchTyping(text) { const btn = document.getElementById('btn-create-manual'); btn.style.display = text.length > 0 ? 'block' : 'none'; if(text.length > 0) btn.innerText = /^\d+$/.test(text) ? `➕ Registrar: ${text}` : `➕ Crear: "${text}"`; clearTimeout(debounceTimer); debounceTimer = setTimeout(() => searchInDB(text), 300); }
-    async function searchInDB(text) { if(text.length < 2) return; if (!isOnline) { const cache = getLocalCache(); const results = Object.values(cache).filter(p => p.name.toLowerCase().includes(text.toLowerCase()) || p.barcode.startsWith(text)); renderSearchResults(results); return; } let query = db.from('products').select('*').limit(5); if (/^\d+$/.test(text)) query = query.ilike('barcode', `${text}%`); else query = query.ilike('name', `%${text}%`); let { data: results } = await query; renderSearchResults(results); }
+    
+    // --- BÚSQUEDA MEJORADA CON ALERTAS ---
+    async function searchInDB(text) { 
+        if(text.length < 2) return; 
+        if (!isOnline) { 
+            const cache = getLocalCache(); 
+            const results = Object.values(cache).filter(p => p.name.toLowerCase().includes(text.toLowerCase()) || p.barcode.startsWith(text)); 
+            renderSearchResults(results); 
+            return; 
+        } 
+        
+        let query = db.from('products').select('*').limit(5); 
+        if (/^\d+$/.test(text)) query = query.ilike('barcode', `${text}%`); 
+        else query = query.ilike('name', `%${text}%`); 
+        
+        let { data: results, error } = await query;
+        
+        if (error) {
+            console.error("Error búsqueda:", error);
+            showToast("Error permisos BD", "alert"); 
+            return;
+        }
+        
+        renderSearchResults(results); 
+    }
+
     function renderSearchResults(results) { const list = document.getElementById('search-results'); list.innerHTML = ''; if(results?.length) { results.forEach(p => { const li = document.createElement('li'); li.className = 'search-result-item'; li.innerHTML = `<div style="flex-grow:1; margin-right:10px;"><span style="font-weight:600;">${p.name}</span><small style="color:#666; display:block;">${p.store.toUpperCase()}</small></div><b>$${p.price}</b>`; li.onclick = () => { closeAllModals(); openProductModal(p.barcode, p.name, p.price, p.store, false, p.category); }; list.appendChild(li); }); } else { list.innerHTML = '<li style="padding:10px;color:#666">Sin resultados</li>'; } }
+    
     function startScanner() { document.getElementById('scanner-container').style.display = 'block'; html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 }, formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ] }, onScanSuccess).catch(err => html5QrCode.start({ facingMode: "user" }, { fps: 10, qrbox: 250 }, onScanSuccess)); }
     function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-container').style.display = 'none'; html5QrCode.clear(); }).catch(e=>console.error(e)); else document.getElementById('scanner-container').style.display = 'none'; }
 </script>
