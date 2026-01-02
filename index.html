@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V19</title>
+    <title>Scanner Pro V19.1</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -396,6 +396,7 @@
         const finalBarcode = document.getElementById('modal-barcode').value.trim();
         if (!name || isNaN(price) || !finalBarcode) { showToast("⚠️ Faltan datos", "alert"); return; }
         
+        // CORREGIDO: Usamos user_id para la tabla price_reports
         const productData = { 
             barcode: finalBarcode, store: store, name: name, price: price, category: category,
             user_id: currentUser ? currentUser.id : null 
@@ -405,9 +406,14 @@
         saveToLocalCache(productData);
 
         if (isOnline) {
-            // ENVIAMOS AL BUZÓN DE REPORTES, NO A PRODUCTS
+            // ENVIAMOS AL BUZÓN DE REPORTES
             const { error } = await db.from('price_reports').insert(productData);
-            if (!error) finalizeSave(productData, currentQty); else { addToSyncQueue(productData); finalizeSave(productData, currentQty, true); }
+            if (!error) finalizeSave(productData, currentQty); 
+            else { 
+                console.error("Error insert:", error); // Debug log
+                addToSyncQueue(productData); 
+                finalizeSave(productData, currentQty, true); 
+            }
         } else {
             addToSyncQueue(productData); finalizeSave(productData, currentQty, true);
         }
