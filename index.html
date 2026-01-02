@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V21</title>
+    <title>Scanner Pro V22</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -226,12 +226,15 @@
         <strong>📝 Detalle Producto</strong>
         <span id="store-badge" style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;"></span>
     </div>
+    
     <div id="comparison-alert" class="price-alert"></div>
+    
     <div style="text-align:right; margin-bottom:10px;">
         <button onclick="openHistoryModal()" style="background:none; border:none; color:#1976d2; font-size:0.9rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:flex-end; gap:5px; width:100%;">
             <span>📉 Ver Historial</span>
         </button>
     </div>
+
     <label style="font-size:0.8rem; color:#666;">Código:</label>
     <input type="text" id="modal-barcode" disabled>
     <input type="text" id="inp-name" placeholder="Nombre (ej: Leche)" autocomplete="off">
@@ -292,6 +295,7 @@
     try { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.error("Error init Supabase:", e); }
 
     let cart = []; let total = 0; let lastScannedCode = null; let isProcessing = false; let html5QrCode = null; let currentQty = 1; let isOnline = navigator.onLine; let currentUser = null; 
+    let editingItemId = null; // Variable para controlar la edición de items del carrito
 
     // --- AUTH ---
     if (db) {
@@ -395,7 +399,6 @@
         document.getElementById('history-modal').style.display = 'block';
         const list = document.getElementById('history-list'); list.innerHTML = '<li>Cargando historial...</li>';
         
-        // AHORA CONSULTAMOS LA TABLA DE REPORTES PARA VER EL ESTADO DEL JUEZ
         const { data, error } = await db.from('price_reports').select('*').eq('barcode', barcode).order('created_at', { ascending: false }).limit(20);
         
         if(error || !data || data.length === 0) { list.innerHTML = '<li style="padding:15px; text-align:center;">No hay reportes aún.</li>'; return; }
@@ -421,18 +424,58 @@
         });
     }
 
-    function openProductModal(code, name, price, store, isEditableBarcode, category = 'otros') {
-        currentQty = 1; document.getElementById('qty-display').innerText = "1";
-        document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('product-modal').style.display = 'block';
+    function openProductModal(code, name, price, store, isEditableBarcode, category = 'otros', initialQty = 1) {
+        currentQty = initialQty; 
+        document.getElementById('qty-display').innerText = currentQty;
+        document.getElementById('overlay-bg').style.display = 'block'; 
+        document.getElementById('product-modal').style.display = 'block';
+        
         checkCrossStorePrice(code, store, price);
-        const barcodeInput = document.getElementById('modal-barcode'); barcodeInput.value = code; barcodeInput.disabled = !isEditableBarcode;
-        barcodeInput.style.border = isEditableBarcode ? "1px solid #2e7d32" : "1px dashed #ccc"; barcodeInput.style.backgroundColor = isEditableBarcode ? "#fff" : "#f9f9f9";
-        document.getElementById('inp-name').value = name; document.getElementById('inp-price').value = price;
-        document.getElementById('inp-category').value = category || 'otros'; document.getElementById('store-badge').innerText = store.toUpperCase();
-        if(price) document.querySelector('.btn-confirm').focus(); else if(name) document.getElementById('inp-price').focus(); else document.getElementById('inp-name').focus();
+        
+        const barcodeInput = document.getElementById('modal-barcode'); 
+        barcodeInput.value = code; 
+        barcodeInput.disabled = !isEditableBarcode;
+        barcodeInput.style.border = isEditableBarcode ? "1px solid #2e7d32" : "1px dashed #ccc"; 
+        barcodeInput.style.backgroundColor = isEditableBarcode ? "#fff" : "#f9f9f9";
+        
+        document.getElementById('inp-name').value = name; 
+        document.getElementById('inp-price').value = price;
+        document.getElementById('inp-category').value = category || 'otros'; 
+        document.getElementById('store-badge').innerText = store.toUpperCase();
+        
+        if(price) document.querySelector('.btn-confirm').focus(); 
+        else if(name) document.getElementById('inp-price').focus(); 
+        else document.getElementById('inp-name').focus();
     }
 
-    function closeAllModals() { document.getElementById('overlay-bg').style.display = 'none'; document.getElementById('product-modal').style.display = 'none'; document.getElementById('search-modal').style.display = 'none'; document.getElementById('comparison-alert').style.display = 'none'; document.getElementById('history-modal').style.display = 'none'; isProcessing = false; lastScannedCode = null; }
+    function closeAllModals() {
+        document.getElementById('overlay-bg').style.display = 'none'; 
+        document.getElementById('product-modal').style.display = 'none'; 
+        document.getElementById('search-modal').style.display = 'none'; 
+        document.getElementById('comparison-alert').style.display = 'none'; 
+        document.getElementById('history-modal').style.display = 'none'; 
+        isProcessing = false; 
+        lastScannedCode = null;
+        editingItemId = null; // Limpiar estado de edición
+    }
+
+    // --- NUEVO: FUNCIÓN PARA EDITAR ITEM DEL CARRITO ---
+    function editCartItem(id) {
+        const item = cart.find(i => i.id === id);
+        if (!item) return;
+        
+        // Si es un item antiguo sin código, no podemos editarlo bien
+        if (!item.barcode || !item.store) {
+            alert("Este producto es antiguo y no se puede editar. Bórralo y escanealo de nuevo.");
+            return;
+        }
+
+        editingItemId = id; // Marcamos que estamos editando
+        
+        // Abrimos el modal con los datos del item
+        // Asumimos que el código no es editable (false) porque ya existe
+        openProductModal(item.barcode, item.name, item.price, document.getElementById('store-select').value, false, item.category, item.qty);
+    }
 
     async function saveAndAdd() {
         const name = document.getElementById('inp-name').value;
@@ -466,6 +509,13 @@
 
     function finalizeSave(product, qty, offlineMode = false) { 
         addToCart(product, qty); 
+        
+        // Si estábamos editando, borramos el item viejo
+        if (editingItemId) {
+            removeFromCart(editingItemId, false); // false = sin confirmación
+            editingItemId = null;
+        }
+
         if (offlineMode && isOnline) { } else {
             const msg = offlineMode ? "Guardado en local 📡" : "Guardado exitoso ✅";
             showToast(msg, offlineMode ? "normal" : "success"); 
@@ -473,8 +523,33 @@
         closeAllModals(); 
     }
     
-    function addToCart(product, qty) { const cartItem = { id: Date.now() + Math.random(), name: product.name, price: product.price, category: product.category || 'otros', qty: qty, subtotal: product.price * qty }; cart.push(cartItem); saveCartToLocal(); renderCart(); }
-    function removeFromCart(id) { if(navigator.vibrate) navigator.vibrate(50); if(!confirm("¿Borrar item?")) return; cart = cart.filter(item => item.id !== id); saveCartToLocal(); renderCart(); }
+    function addToCart(product, qty) { 
+        // Agregamos barcode y store para poder editar después
+        const cartItem = { 
+            id: Date.now() + Math.random(), 
+            name: product.name, 
+            price: product.price, 
+            category: product.category || 'otros', 
+            qty: qty, 
+            subtotal: product.price * qty,
+            barcode: product.barcode,
+            store: product.store
+        }; 
+        cart.push(cartItem); 
+        saveCartToLocal(); 
+        renderCart(); 
+    }
+    
+    function removeFromCart(id, confirmDelete = true) { 
+        if(confirmDelete) {
+            if(navigator.vibrate) navigator.vibrate(50); 
+            if(!confirm("¿Borrar item?")) return; 
+        }
+        cart = cart.filter(item => item.id !== id); 
+        saveCartToLocal(); 
+        renderCart(); 
+    }
+    
     function clearCart() { if(cart.length === 0) return; if(confirm("¿Vaciar carrito?")) { cart = []; saveCartToLocal(); renderCart(); showToast("Carrito vaciado"); } }
     function saveCartToLocal() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
 
@@ -489,7 +564,15 @@
                 const li = document.createElement('li'); li.className = 'product-item';
                 const qtyBadge = item.qty > 1 ? `<span class="item-qty-badge">${item.qty}x</span>` : '';
                 const displayPrice = item.qty > 1 ? `$${item.subtotal.toLocaleString()} <small style='color:#999'>($${item.price} c/u)</small>` : `$${item.price.toLocaleString()}`;
-                li.innerHTML = `<div style="flex-grow:1"><span style="font-weight:600; font-size:1rem;">${qtyBadge} ${item.name}</span><br><span style="color:#666; font-size:0.9rem;">${displayPrice}</span></div><button class="btn-delete" onclick="removeFromCart(${item.id})">×</button>`;
+                
+                // Hacemos el DIV principal clickeable para editar
+                li.innerHTML = `
+                    <div style="flex-grow:1; cursor:pointer;" onclick="editCartItem(${item.id})">
+                        <span style="font-weight:600; font-size:1rem;">${qtyBadge} ${item.name}</span><br>
+                        <span style="color:#666; font-size:0.9rem;">${displayPrice}</span>
+                    </div>
+                    <button class="btn-delete" onclick="removeFromCart(${item.id})">×</button>
+                `;
                 list.appendChild(li);
             });
         });
