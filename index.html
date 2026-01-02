@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V22</title>
+    <title>Scanner Pro V23.1</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -268,7 +268,7 @@
     </div>
 </div>
 
-<!-- MODAL HISTORIAL (CON STATUS) -->
+<!-- MODAL HISTORIAL (CON STATUS Y MOTIVO) -->
 <div id="history-modal" class="modal" style="z-index: 200;">
     <div class="modal-header">
         <strong>📉 Historial de Reportes</strong>
@@ -295,7 +295,7 @@
     try { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.error("Error init Supabase:", e); }
 
     let cart = []; let total = 0; let lastScannedCode = null; let isProcessing = false; let html5QrCode = null; let currentQty = 1; let isOnline = navigator.onLine; let currentUser = null; 
-    let editingItemId = null; // Variable para controlar la edición de items del carrito
+    let editingItemId = null; 
 
     // --- AUTH ---
     if (db) {
@@ -393,7 +393,7 @@
         }
     }
 
-    // --- HISTORIAL CON ESTADO ---
+    // --- HISTORIAL CON ESTADO Y MOTIVO (UPDATED) ---
     async function openHistoryModal() {
         const barcode = document.getElementById('modal-barcode').value; if(!barcode) return;
         document.getElementById('history-modal').style.display = 'block';
@@ -409,6 +409,14 @@
             const statusClass = item.status === 'approved' ? 'approved' : (item.status === 'rejected' ? 'rejected' : 'pending');
             const statusLabel = item.status === 'approved' ? 'Aceptado' : (item.status === 'rejected' ? 'Rechazado' : 'Pendiente');
             
+            // Lógica para mostrar el motivo (status_reason)
+            let reasonHtml = '';
+            if (item.status_reason) {
+                const color = item.status === 'rejected' ? '#c62828' : '#2e7d32'; // Rojo o Verde
+                const icon = item.status === 'rejected' ? '⚠️' : 'ℹ️';
+                reasonHtml = `<div style="font-size:0.75rem; color:${color}; margin-top:4px;">${icon} ${item.status_reason}</div>`;
+            }
+
             const li = document.createElement('li'); li.className = 'product-item';
             li.innerHTML = `
                 <div style="width:100%">
@@ -418,6 +426,7 @@
                     </div>
                     <span style="font-size:0.8rem; color:#666;">en ${item.store.toUpperCase()}</span><br>
                     <small style="color:#999">${date}</small>
+                    ${reasonHtml}
                 </div>
             `;
             list.appendChild(li);
@@ -456,7 +465,7 @@
         document.getElementById('history-modal').style.display = 'none'; 
         isProcessing = false; 
         lastScannedCode = null;
-        editingItemId = null; // Limpiar estado de edición
+        editingItemId = null; 
     }
 
     // --- NUEVO: FUNCIÓN PARA EDITAR ITEM DEL CARRITO ---
@@ -464,16 +473,12 @@
         const item = cart.find(i => i.id === id);
         if (!item) return;
         
-        // Si es un item antiguo sin código, no podemos editarlo bien
         if (!item.barcode || !item.store) {
             alert("Este producto es antiguo y no se puede editar. Bórralo y escanealo de nuevo.");
             return;
         }
 
-        editingItemId = id; // Marcamos que estamos editando
-        
-        // Abrimos el modal con los datos del item
-        // Asumimos que el código no es editable (false) porque ya existe
+        editingItemId = id; 
         openProductModal(item.barcode, item.name, item.price, document.getElementById('store-select').value, false, item.category, item.qty);
     }
 
@@ -510,9 +515,8 @@
     function finalizeSave(product, qty, offlineMode = false) { 
         addToCart(product, qty); 
         
-        // Si estábamos editando, borramos el item viejo
         if (editingItemId) {
-            removeFromCart(editingItemId, false); // false = sin confirmación
+            removeFromCart(editingItemId, false); 
             editingItemId = null;
         }
 
@@ -524,7 +528,6 @@
     }
     
     function addToCart(product, qty) { 
-        // Agregamos barcode y store para poder editar después
         const cartItem = { 
             id: Date.now() + Math.random(), 
             name: product.name, 
@@ -565,7 +568,6 @@
                 const qtyBadge = item.qty > 1 ? `<span class="item-qty-badge">${item.qty}x</span>` : '';
                 const displayPrice = item.qty > 1 ? `$${item.subtotal.toLocaleString()} <small style='color:#999'>($${item.price} c/u)</small>` : `$${item.price.toLocaleString()}`;
                 
-                // Hacemos el DIV principal clickeable para editar
                 li.innerHTML = `
                     <div style="flex-grow:1; cursor:pointer;" onclick="editCartItem(${item.id})">
                         <span style="font-weight:600; font-size:1rem;">${qtyBadge} ${item.name}</span><br>
