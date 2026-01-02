@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V28.1</title>
+    <title>Scanner Pro V28.2</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -496,46 +496,82 @@
 
     async function openHistoryModal() {
         const barcode = document.getElementById('modal-barcode').value; if(!barcode) return;
+        const currentStore = document.getElementById('store-select').value;
+        
         document.getElementById('history-modal').style.display = 'block';
         const list = document.getElementById('history-list'); list.innerHTML = '<li>Cargando historial...</li>';
         
-        const { data, error } = await db.from('price_reports').select('*').eq('barcode', barcode).order('created_at', { ascending: false }).limit(30);
+        // 1. Filtrar solo por tienda actual y NO rechazados
+        const { data, error } = await db.from('price_reports')
+            .select('*')
+            .eq('barcode', barcode)
+            .eq('store', currentStore)
+            .neq('status', 'rejected')
+            .order('created_at', { ascending: false })
+            .limit(30);
         
-        if(error || !data || data.length === 0) { list.innerHTML = '<li style="padding:15px; text-align:center;">No hay reportes aún.</li>'; return; }
+        if(error || !data || data.length === 0) { 
+            list.innerHTML = '<li style="padding:15px; text-align:center;">No hay historial válido para esta tienda.</li>'; 
+            return; 
+        }
         
         list.innerHTML = '';
-        let lastShownPrice = -1; let lastShownStore = ''; let shownCount = 0;
-
+        
+        // 2. Filtrar duplicados consecutivos de precio para limpiar la vista
+        let uniqueHistory = [];
+        // Recorremos de más nuevo a más viejo
         data.forEach(item => {
-            if (item.price === lastShownPrice && item.store === lastShownStore) return;
-            lastShownPrice = item.price; lastShownStore = item.store; shownCount++;
+            // Si es el primer elemento (el más nuevo) o el precio es distinto al anterior guardado en uniqueHistory
+            if (uniqueHistory.length === 0 || item.price !== uniqueHistory[uniqueHistory.length - 1].price) {
+                uniqueHistory.push(item);
+            }
+        });
 
+        uniqueHistory.forEach((item, index) => {
             const date = new Date(item.created_at).toLocaleDateString();
-            const statusClass = item.status === 'approved' ? 'approved' : (item.status === 'rejected' ? 'rejected' : 'pending');
-            const statusLabel = item.status === 'approved' ? 'Aceptado' : (item.status === 'rejected' ? 'Rechazado' : 'Pendiente');
             
-            let reasonHtml = '';
-            if (item.status_reason) {
-                const color = item.status === 'rejected' ? '#c62828' : '#2e7d32';
-                const icon = item.status === 'rejected' ? '⚠️' : 'ℹ️';
-                reasonHtml = `<div style="font-size:0.75rem; color:${color}; margin-top:4px;">${icon} ${item.status_reason}</div>`;
+            // 3. Determinar tendencia (comparando con el siguiente en la lista, que es el anterior en el tiempo)
+            let trendIcon = '➖';
+            let trendClass = 'neutral'; // Clase por defecto (gris/negro)
+            let trendText = 'Mantiene';
+            let trendStyle = 'color:#666;'; // Estilo por defecto
+
+            const previousItem = uniqueHistory[index + 1];
+            
+            if (previousItem) {
+                if (item.price > previousItem.price) {
+                    trendIcon = '📈'; 
+                    trendClass = 'expensive'; 
+                    trendText = 'Subió';
+                    trendStyle = 'color:#c62828;';
+                } else if (item.price < previousItem.price) {
+                    trendIcon = '📉'; 
+                    trendClass = 'cheaper'; 
+                    trendText = 'Bajó';
+                    trendStyle = 'color:#2e7d32;';
+                }
+            } else {
+                 trendIcon = '🆕';
+                 trendText = 'Inicial';
+                 trendStyle = 'color:#1976d2;';
             }
 
-            const li = document.createElement('li'); li.className = 'product-item';
+            const li = document.createElement('li'); 
+            li.className = 'product-item';
+            
             li.innerHTML = `
                 <div style="width:100%">
-                    <div style="display:flex; justify-content:space-between;">
-                        <strong>$${new Intl.NumberFormat('es-CL').format(item.price)}</strong> 
-                        <span class="status-badge ${statusClass}">${statusLabel}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="font-size:1.1rem;">$${new Intl.NumberFormat('es-CL').format(item.price)}</strong> 
+                        <span style="font-size:0.8rem; font-weight:bold; ${trendStyle} background:#f5f5f5; padding:2px 8px; border-radius:10px;">
+                            ${trendIcon} ${trendText}
+                        </span>
                     </div>
-                    <span style="font-size:0.8rem; color:#666;">en ${item.store.toUpperCase()}</span><br>
-                    <small style="color:#999">${date}</small>
-                    ${reasonHtml}
+                    <small style="color:#999">Registrado el ${date}</small>
                 </div>
             `;
             list.appendChild(li);
         });
-        if (shownCount === 0) list.innerHTML = '<li style="padding:15px; text-align:center;">Historial redundante ocultado.</li>';
     }
 
     function openProductModal(code, name, price, store, isEditableBarcode, category = 'otros', initialQty = 1) {
@@ -543,6 +579,10 @@
         document.getElementById('qty-display').innerText = currentQty;
         document.getElementById('overlay-bg').style.display = 'block'; 
         document.getElementById('product-modal').style.display = 'block';
+        
+        // Limpiar comparación anterior
+        document.getElementById('comparison-results').innerHTML = '';
+        document.getElementById('comparison-results').style.display = 'none';
         
         const barcodeInput = document.getElementById('modal-barcode'); 
         barcodeInput.value = code; 
