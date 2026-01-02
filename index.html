@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V19.1</title>
+    <title>Scanner Pro V20</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -47,18 +47,27 @@
         }
         header.offline { background-color: #455a64; }
 
-        /* PERFIL USUARIO */
-        .user-profile {
-            position: absolute; top: 10px; right: 15px;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .user-avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; }
+        /* BARRA SUPERIOR (Estado + Sync + Perfil) */
+        .top-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         
-        #connection-status {
-            font-size: 0.7rem; color: white; background: rgba(0,0,0,0.2); 
-            padding: 2px 8px; border-radius: 10px; margin-bottom: 4px; display: none;
+        .connection-badge {
+            font-size: 0.75rem; color: white; background: rgba(0,0,0,0.2); 
+            padding: 4px 8px; border-radius: 12px; display: none;
         }
         
+        /* BOTÓN DE SINCRONIZACIÓN */
+        .sync-btn {
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+            color: white; border-radius: 15px; padding: 4px 10px; font-size: 0.8rem;
+            cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 500;
+        }
+        .sync-btn.pending { background: #ff9800; border-color: #f57c00; animation: pulse-border 2s infinite; color: white; }
+        @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(255, 152, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); } }
+
+        .user-profile { display: flex; align-items: center; gap: 8px; }
+        .user-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; cursor: pointer;}
+
+        /* SELECTOR COMPACTO */
         #store-select {
             font-size: 0.9rem; padding: 4px 12px; border-radius: 20px; border: none; 
             font-weight: 600; width: auto; min-width: 150px; max-width: 80%;
@@ -153,8 +162,13 @@
 <!-- APP PRINCIPAL -->
 <div id="app-content">
     <header id="app-header">
-        <div id="connection-status">📡 Modo Offline</div>
-        <div class="user-profile" id="user-profile"></div>
+        <div class="top-bar">
+            <div id="connection-status" class="connection-badge">📡 Offline</div>
+            <!-- BOTÓN SYNC NUEVO -->
+            <button id="sync-btn" class="sync-btn" onclick="syncOfflineData()">☁️ Al día</button>
+            <div class="user-profile" id="user-profile"></div>
+        </div>
+
         <select id="store-select" onchange="handleStoreChange()">
             <option value="lider">🔵 Lider</option>
             <option value="jumbo">🐘 Jumbo</option>
@@ -207,15 +221,12 @@
         <strong>📝 Detalle Producto</strong>
         <span id="store-badge" style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;"></span>
     </div>
-    
     <div id="comparison-alert" class="price-alert"></div>
-    
     <div style="text-align:right; margin-bottom:10px;">
         <button onclick="openHistoryModal()" style="background:none; border:none; color:#1976d2; font-size:0.9rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:flex-end; gap:5px; width:100%;">
             <span>📉 Ver Historial</span>
         </button>
     </div>
-
     <label style="font-size:0.8rem; color:#666;">Código:</label>
     <input type="text" id="modal-barcode" disabled>
     <input type="text" id="inp-name" placeholder="Nombre (ej: Leche)" autocomplete="off">
@@ -313,19 +324,51 @@
     window.addEventListener('offline', () => { isOnline = false; updateConnectionStatus(); showToast("Modo Offline activado 📡", "normal"); });
     updateConnectionStatus();
 
+    // Actualiza indicador de conexión y de sync
     function updateConnectionStatus() {
-        const header = document.getElementById('app-header'); const badge = document.getElementById('connection-status');
-        if(isOnline) { header.classList.remove('offline'); badge.style.display = 'none'; } else { header.classList.add('offline'); badge.style.display = 'inline-block'; }
+        const badge = document.getElementById('connection-status');
+        if(isOnline) { badge.style.display = 'none'; } else { badge.style.display = 'inline-block'; }
+        updateSyncUI(); // Refrescar botón de sync
+    }
+    
+    function updateSyncUI() {
+        const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+        const btn = document.getElementById('sync-btn');
+        if (queue.length > 0) {
+            btn.className = 'sync-btn pending';
+            btn.innerHTML = `☁️ ${queue.length} Pendientes`;
+        } else {
+            btn.className = 'sync-btn ok';
+            btn.innerHTML = `☁️ Al día`;
+        }
     }
     
     function getLocalCache() { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
     function saveToLocalCache(product) { const cache = getLocalCache(); const key = `${product.barcode}_${product.store}`; cache[key] = product; localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); }
-    function addToSyncQueue(product) { const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); queue.push(product); localStorage.setItem(QUEUE_KEY, JSON.stringify(queue)); }
+    function addToSyncQueue(product) { const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); queue.push(product); localStorage.setItem(QUEUE_KEY, JSON.stringify(queue)); updateSyncUI(); }
+    
     async function syncOfflineData() {
-        const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); if (queue.length === 0) return; showToast(`Sincronizando...`); 
+        const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); 
+        if (queue.length === 0) { showToast("Nada que sincronizar"); return; }
+        
+        showToast(`Sincronizando ${queue.length} cambios...`); 
         const remainingQueue = [];
-        for (const item of queue) { const { error } = await db.from('price_reports').insert(item); if (error) remainingQueue.push(item); }
-        localStorage.setItem(QUEUE_KEY, JSON.stringify(remainingQueue)); if (remainingQueue.length === 0) showToast("Sincronización completa ✅", "success");
+        
+        for (const item of queue) { 
+            const { error } = await db.from('price_reports').insert(item); 
+            if (error) {
+                console.error("Error Sync:", error);
+                // Si el error es grave (no es de conexión), mostramos alerta
+                if (error.code) showToast("Error: " + error.message, "alert");
+                remainingQueue.push(item);
+            }
+        }
+        
+        localStorage.setItem(QUEUE_KEY, JSON.stringify(remainingQueue)); 
+        updateSyncUI();
+        
+        if (remainingQueue.length === 0) showToast("Sincronización completa ✅", "success");
+        else showToast(`${remainingQueue.length} items fallaron`, "alert");
     }
 
     async function onScanSuccess(decodedText) { if (isProcessing || decodedText === lastScannedCode) return; isProcessing = true; lastScannedCode = decodedText; stopScanner(); checkProductInDB(decodedText, false); }
@@ -396,21 +439,21 @@
         const finalBarcode = document.getElementById('modal-barcode').value.trim();
         if (!name || isNaN(price) || !finalBarcode) { showToast("⚠️ Faltan datos", "alert"); return; }
         
-        // CORREGIDO: Usamos user_id para la tabla price_reports
         const productData = { 
             barcode: finalBarcode, store: store, name: name, price: price, category: category,
             user_id: currentUser ? currentUser.id : null 
         };
 
-        // Cache local optimista (para que el usuario lo vea actualizado en su sesión)
         saveToLocalCache(productData);
 
         if (isOnline) {
-            // ENVIAMOS AL BUZÓN DE REPORTES
             const { error } = await db.from('price_reports').insert(productData);
-            if (!error) finalizeSave(productData, currentQty); 
-            else { 
-                console.error("Error insert:", error); // Debug log
+            if (!error) {
+                finalizeSave(productData, currentQty); 
+            } else { 
+                console.error("Error insert:", error); 
+                // MOSTRAR ERROR REAL AL USUARIO PARA DEBUG
+                showToast(`Error Nube: ${error.message || error.code}`, "alert");
                 addToSyncQueue(productData); 
                 finalizeSave(productData, currentQty, true); 
             }
@@ -419,7 +462,18 @@
         }
     }
 
-    function finalizeSave(product, qty, offlineMode = false) { addToCart(product, qty); const msg = offlineMode ? "Guardado en local 📡" : "Guardado exitoso ✅"; showToast(msg, "success"); closeAllModals(); }
+    function finalizeSave(product, qty, offlineMode = false) { 
+        addToCart(product, qty); 
+        // Solo mostramos "Guardado en local" si fue offline puro, si fue error, ya mostramos el error arriba
+        if (offlineMode && isOnline) {
+            // Ya mostramos el toast de error en saveAndAdd
+        } else {
+            const msg = offlineMode ? "Guardado en local 📡" : "Guardado exitoso ✅";
+            showToast(msg, offlineMode ? "normal" : "success"); 
+        }
+        closeAllModals(); 
+    }
+    
     function addToCart(product, qty) { const cartItem = { id: Date.now() + Math.random(), name: product.name, price: product.price, category: product.category || 'otros', qty: qty, subtotal: product.price * qty }; cart.push(cartItem); saveCartToLocal(); renderCart(); }
     function removeFromCart(id) { if(navigator.vibrate) navigator.vibrate(50); if(!confirm("¿Borrar item?")) return; cart = cart.filter(item => item.id !== id); saveCartToLocal(); renderCart(); }
     function clearCart() { if(cart.length === 0) return; if(confirm("¿Vaciar carrito?")) { cart = []; saveCartToLocal(); renderCart(); showToast("Carrito vaciado"); } }
