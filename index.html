@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V25</title>
+    <title>Scanner Pro V25.1</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -112,8 +112,12 @@
         .total-box.danger { border-color: #d32f2f; background-color: #ffebee; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
+        /* MODIFICADO: CONTROL DE PRESUPUESTO */
         .budget-control { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #eee; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; color: #555; }
-        .budget-input { width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-size: 1rem; color: #333; margin-bottom: 0; font-weight: bold; }
+        .budget-input { 
+            width: 100px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; 
+            text-align: center; font-size: 1rem; color: #333; margin-bottom: 0; font-weight: bold; 
+        }
         .btn-clear-cart { margin-top: 15px; background: none; border: 1px solid #ffcdd2; color: #c62828; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
 
         .product-list { list-style: none; padding: 0; }
@@ -207,10 +211,13 @@
         <div class="total-box">
             <small>Total Carrito</small>
             <div class="total-price" id="total-amount">$0</div>
+            
+            <!-- CAMPO META MODIFICADO -->
             <div class="budget-control">
-                <span>🎯 Meta: $</span>
-                <input type="number" class="budget-input" id="budget-limit" placeholder="..." oninput="updateTotalDisplay()">
+                <span>Meta: $</span>
+                <input type="text" inputmode="numeric" class="budget-input" id="budget-limit" placeholder="..." oninput="handleBudgetInput(this)">
             </div>
+            
             <button class="btn-clear-cart" onclick="clearCart()">🗑️ Vaciar Carrito</button>
         </div>
         <ul class="product-list" id="cart-list"></ul>
@@ -365,6 +372,20 @@
         }
     }
     
+    // --- FORMATO MILES ---
+    function handleBudgetInput(input) {
+        let value = input.value.replace(/\D/g, ''); // Solo números
+        if (value === '') {
+            input.value = '';
+            updateTotalDisplay();
+            return;
+        }
+        // Formatear con separador de miles
+        const formatted = new Intl.NumberFormat('es-CL').format(parseInt(value));
+        input.value = formatted;
+        updateTotalDisplay();
+    }
+
     function getLocalCache() { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
     function saveToLocalCache(product) { const cache = getLocalCache(); const key = `${product.barcode}_${product.store}`; cache[key] = product; localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); }
     function addToSyncQueue(product) { const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); queue.push(product); localStorage.setItem(QUEUE_KEY, JSON.stringify(queue)); updateSyncUI(); }
@@ -620,7 +641,27 @@
         total = calculatedTotal; updateTotalDisplay();
     }
 
-    function updateTotalDisplay() { const amountEl = document.getElementById('total-amount'); const boxEl = document.querySelector('.total-box'); const limitInput = document.getElementById('budget-limit').value; amountEl.innerText = '$' + total.toLocaleString(); amountEl.className = 'total-price'; boxEl.className = 'total-box'; if (limitInput && parseInt(limitInput) > 0) { const limit = parseInt(limitInput); if (total > limit) { amountEl.classList.add('danger'); boxEl.classList.add('danger'); if(navigator.vibrate) navigator.vibrate([200, 100, 200]); } else if (total > limit * 0.9) amountEl.classList.add('warning'); } }
+    function updateTotalDisplay() { 
+        const amountEl = document.getElementById('total-amount'); 
+        const boxEl = document.querySelector('.total-box'); 
+        const limitInput = document.getElementById('budget-limit');
+        const limitValue = limitInput.value.replace(/\./g, '');
+        
+        amountEl.innerText = '$' + total.toLocaleString('es-CL'); 
+        amountEl.className = 'total-price'; 
+        boxEl.className = 'total-box'; 
+        
+        if (limitValue && parseInt(limitValue) > 0) { 
+            const limit = parseInt(limitValue); 
+            if (total > limit) { 
+                amountEl.classList.add('danger'); 
+                boxEl.classList.add('danger'); 
+                if(navigator.vibrate) navigator.vibrate([200, 100, 200]); 
+            } else if (total > limit * 0.9) {
+                amountEl.classList.add('warning'); 
+            }
+        } 
+    }
     function handleStoreChange() { if(cart.length > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { clearCart(); } }
     function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
     function openSearchModal() { document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('search-modal').style.display = 'block'; document.getElementById('search-input').focus(); }
