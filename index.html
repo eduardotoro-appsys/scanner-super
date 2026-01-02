@@ -255,10 +255,10 @@
 
 <script>
     // ==========================================
-    // ⚠️ IMPORTANTE: PEGA TUS CLAVES REALES AQUÍ
+    // ⚠️ ATENCIÓN: PEGA TUS CLAVES AQUÍ ABAJO
     // ==========================================
-    const SUPABASE_URL = 'https://hviansyzbyzkfdmgujah.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_sfFASSOkI15dXpf5vulSRQ_f5EZTW4_';
+    const SUPABASE_URL = 'https://hviansyzbyzkfdmgujah.supabase.co'; 
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2aWFuc3l6Ynl6a2ZkbWd1amFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMTA0OTAsImV4cCI6MjA4Mjc4NjQ5MH0.1_vn4udmbsQkKRrTMiRFatpfqtRyiq_5VBgdsKjJwW8';
     // ==========================================
     
     // Inicialización del cliente con manejo de errores simple
@@ -266,8 +266,8 @@
     try {
         db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } catch(e) {
-        alert("Error al inicializar Supabase. Revisa las claves en el código.");
-        console.error(e);
+        // Fallará silenciosamente si las claves son placeholders, pero ya no bloqueará.
+        console.error("Error init Supabase:", e);
     }
 
     let cart = []; 
@@ -295,12 +295,7 @@
     checkSession();
 
     async function signInWithGoogle() {
-        // Validar si las claves siguen siendo las de ejemplo
-        if (SUPABASE_KEY.startsWith('sb_publishable_')) {
-            alert("⚠️ Error: Parece que no has puesto tus claves reales de Supabase en el archivo index.html. Reemplaza 'sb_publishable_...' por tu Anon Key real.");
-            return;
-        }
-
+        // YA NO HAY BLOQUEO POR NOMBRE DE CLAVE
         try {
             console.log("Iniciando login con Google...");
             const { data, error } = await db.auth.signInWithOAuth({
