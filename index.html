@@ -279,29 +279,32 @@
     let isOnline = navigator.onLine;
     let currentUser = null; // Almacenar usuario logueado
 
-    // --- AUTENTICACIÓN ---
-    async function checkSession() {
-        if (!db) return;
-        const { data: { session } } = await db.auth.getSession();
-        if (session) {
-            handleLoginSuccess(session.user);
-        } else {
-            document.getElementById('login-screen').style.display = 'flex';
-            document.getElementById('app-content').style.display = 'none';
-        }
+    // --- AUTENTICACIÓN MEJORADA ---
+    // Usamos onAuthStateChange para detectar el login al volver de Google
+    if (db) {
+        db.auth.onAuthStateChange((event, session) => {
+            console.log("Auth Event:", event);
+            if (session) {
+                handleLoginSuccess(session.user);
+            } else {
+                // Si no hay sesión, mostramos login
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('app-content').style.display = 'none';
+            }
+        });
     }
-    
-    // Al cargar la app, revisamos sesión
-    checkSession();
 
     async function signInWithGoogle() {
-        // YA NO HAY BLOQUEO POR NOMBRE DE CLAVE
         try {
-            console.log("Iniciando login con Google...");
+            // Construimos la URL actual limpia (sin hashes raros)
+            // IMPORTANTE: Asegúrate de que ESTA URL esté en "Redirect URLs" en Supabase
+            const redirectURL = window.location.origin + window.location.pathname;
+            console.log("Redirigiendo a:", redirectURL);
+
             const { data, error } = await db.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: window.location.href // Redirige a la misma página
+                    redirectTo: redirectURL
                 }
             });
             
