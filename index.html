@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V27.1</title>
+    <title>Scanner Pro V27.2</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -320,7 +320,7 @@
     let db;
     try { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.error("Error init Supabase:", e); }
 
-    let cart = []; let total = 0; let lastScannedCode = null; let isProcessing = false; let html5QrCode = null; let currentQty = 1; let isOnline = navigator.onLine; let currentUser = null; 
+    let cart = []; let total = 0; let lastScannedCode = null; isProcessing = false; html5QrCode = null; currentQty = 1; isOnline = navigator.onLine; currentUser = null; 
     let editingItemId = null; 
 
     // --- AUTH ---
@@ -548,7 +548,7 @@
         document.getElementById('overlay-bg').style.display = 'none'; 
         document.getElementById('product-modal').style.display = 'none'; 
         document.getElementById('search-modal').style.display = 'none'; 
-        document.getElementById('comparison-alert').style.display = 'none'; 
+        // document.getElementById('comparison-alert').style.display = 'none'; // ELIMINADO PARA EVITAR ERROR
         document.getElementById('history-modal').style.display = 'none'; 
         isProcessing = false; 
         lastScannedCode = null;
