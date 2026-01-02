@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V25.1</title>
+    <title>Scanner Pro V26</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -152,7 +152,7 @@
         .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; }
         .btn-cancel { flex: 1; background: #f5f5f5; color: #333; padding: 15px; border: none; border-radius: 8px; font-weight: bold; }
 
-        #search-results { list-style: none; padding: 0; margin-bottom: 15px; max-height: 200px; overflow-y: auto; }
+        #search-results { list-style: none; padding: 0; margin-bottom: 15px; max-height: 250px; overflow-y: auto; }
         .search-result-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         
         #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 200; left: 50%; bottom: 30px; opacity: 0; transition: opacity 0.5s, bottom 0.5s; font-weight: 500; }
@@ -212,7 +212,7 @@
             <small>Total Carrito</small>
             <div class="total-price" id="total-amount">$0</div>
             
-            <!-- CAMPO META MODIFICADO -->
+            <!-- CAMPO META -->
             <div class="budget-control">
                 <span>Meta: $</span>
                 <input type="text" inputmode="numeric" class="budget-input" id="budget-limit" placeholder="..." oninput="handleBudgetInput(this)">
@@ -253,7 +253,9 @@
     <label style="font-size:0.8rem; color:#666;">Código:</label>
     <input type="text" id="modal-barcode" disabled>
     <input type="text" id="inp-name" placeholder="Nombre (ej: Leche)" autocomplete="off">
-    <input type="tel" id="inp-price" placeholder="Precio Unidad ($)" inputmode="numeric">
+    <!-- INPUT PRECIO MODIFICADO -->
+    <input type="text" id="inp-price" placeholder="Precio Unidad ($)" inputmode="numeric" oninput="formatCurrencyInput(this)">
+    
     <select id="inp-category">
         <option value="despensa">🥫 Despensa</option>
         <option value="lacteos">🧀 Lácteos y Huevos</option>
@@ -283,7 +285,7 @@
     </div>
 </div>
 
-<!-- MODAL HISTORIAL (CON STATUS Y MOTIVO Y FILTRO VISUAL) -->
+<!-- MODAL HISTORIAL -->
 <div id="history-modal" class="modal" style="z-index: 200;">
     <div class="modal-header">
         <strong>📉 Historial de Reportes</strong>
@@ -366,24 +368,22 @@
         if(confirm("¿Reparar la aplicación?\n\nEsto borrará la cola de pendientes y reiniciará la app. Úsalo si tienes problemas de sincronización.")) {
             localStorage.removeItem(QUEUE_KEY);
             localStorage.removeItem(CACHE_KEY);
-            // No borramos el carrito ni la sesión de supabase para no molestar tanto
             alert("Aplicación reparada. Recargando...");
             window.location.reload();
         }
     }
     
-    // --- FORMATO MILES ---
     function handleBudgetInput(input) {
-        let value = input.value.replace(/\D/g, ''); // Solo números
-        if (value === '') {
-            input.value = '';
-            updateTotalDisplay();
-            return;
-        }
-        // Formatear con separador de miles
-        const formatted = new Intl.NumberFormat('es-CL').format(parseInt(value));
-        input.value = formatted;
+        let value = input.value.replace(/\D/g, ''); 
+        if (value === '') { input.value = ''; updateTotalDisplay(); return; }
+        input.value = new Intl.NumberFormat('es-CL').format(parseInt(value));
         updateTotalDisplay();
+    }
+
+    function formatCurrencyInput(input) {
+        let value = input.value.replace(/\D/g, '');
+        if (value === '') { input.value = ''; return; }
+        input.value = new Intl.NumberFormat('es-CL').format(parseInt(value));
     }
 
     function getLocalCache() { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
@@ -433,34 +433,21 @@
         }
     }
 
-    // --- HISTORIAL MEJORADO (FILTRO VISUAL DE DUPLICADOS CONSECUTIVOS) ---
     async function openHistoryModal() {
         const barcode = document.getElementById('modal-barcode').value; if(!barcode) return;
         document.getElementById('history-modal').style.display = 'block';
         const list = document.getElementById('history-list'); list.innerHTML = '<li>Cargando historial...</li>';
         
-        // Traemos más registros para poder filtrar bien (30)
         const { data, error } = await db.from('price_reports').select('*').eq('barcode', barcode).order('created_at', { ascending: false }).limit(30);
         
         if(error || !data || data.length === 0) { list.innerHTML = '<li style="padding:15px; text-align:center;">No hay reportes aún.</li>'; return; }
         
         list.innerHTML = '';
-        
-        // ALGORITMO DE FILTRADO VISUAL
-        let lastShownPrice = -1;
-        let lastShownStore = '';
-        let shownCount = 0;
+        let lastShownPrice = -1; let lastShownStore = ''; let shownCount = 0;
 
         data.forEach(item => {
-            // Si el precio y tienda son iguales al anterior que mostramos, lo saltamos (es redundante)
-            if (item.price === lastShownPrice && item.store === lastShownStore) {
-                return; // Skip duplicate
-            }
-
-            // Si es diferente, lo mostramos y actualizamos el "último visto"
-            lastShownPrice = item.price;
-            lastShownStore = item.store;
-            shownCount++;
+            if (item.price === lastShownPrice && item.store === lastShownStore) return;
+            lastShownPrice = item.price; lastShownStore = item.store; shownCount++;
 
             const date = new Date(item.created_at).toLocaleDateString();
             const statusClass = item.status === 'approved' ? 'approved' : (item.status === 'rejected' ? 'rejected' : 'pending');
@@ -477,7 +464,7 @@
             li.innerHTML = `
                 <div style="width:100%">
                     <div style="display:flex; justify-content:space-between;">
-                        <strong>$${item.price}</strong> 
+                        <strong>$${new Intl.NumberFormat('es-CL').format(item.price)}</strong> 
                         <span class="status-badge ${statusClass}">${statusLabel}</span>
                     </div>
                     <span style="font-size:0.8rem; color:#666;">en ${item.store.toUpperCase()}</span><br>
@@ -487,64 +474,36 @@
             `;
             list.appendChild(li);
         });
-
-        if (shownCount === 0) {
-             list.innerHTML = '<li style="padding:15px; text-align:center;">Historial redundante ocultado.</li>';
-        }
+        if (shownCount === 0) list.innerHTML = '<li style="padding:15px; text-align:center;">Historial redundante ocultado.</li>';
     }
 
     function openProductModal(code, name, price, store, isEditableBarcode, category = 'otros', initialQty = 1) {
-        currentQty = initialQty; 
-        document.getElementById('qty-display').innerText = currentQty;
-        document.getElementById('overlay-bg').style.display = 'block'; 
-        document.getElementById('product-modal').style.display = 'block';
-        
+        currentQty = initialQty; document.getElementById('qty-display').innerText = currentQty;
+        document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('product-modal').style.display = 'block';
         checkCrossStorePrice(code, store, price);
-        
-        const barcodeInput = document.getElementById('modal-barcode'); 
-        barcodeInput.value = code; 
-        barcodeInput.disabled = !isEditableBarcode;
-        barcodeInput.style.border = isEditableBarcode ? "1px solid #2e7d32" : "1px dashed #ccc"; 
-        barcodeInput.style.backgroundColor = isEditableBarcode ? "#fff" : "#f9f9f9";
-        
+        const barcodeInput = document.getElementById('modal-barcode'); barcodeInput.value = code; barcodeInput.disabled = !isEditableBarcode;
+        barcodeInput.style.border = isEditableBarcode ? "1px solid #2e7d32" : "1px dashed #ccc"; barcodeInput.style.backgroundColor = isEditableBarcode ? "#fff" : "#f9f9f9";
         document.getElementById('inp-name').value = name; 
-        document.getElementById('inp-price').value = price;
-        document.getElementById('inp-category').value = category || 'otros'; 
-        document.getElementById('store-badge').innerText = store.toUpperCase();
-        
-        if(price) document.querySelector('.btn-confirm').focus(); 
-        else if(name) document.getElementById('inp-price').focus(); 
-        else document.getElementById('inp-name').focus();
+        document.getElementById('inp-price').value = price ? new Intl.NumberFormat('es-CL').format(price) : '';
+        document.getElementById('inp-category').value = category || 'otros'; document.getElementById('store-badge').innerText = store.toUpperCase();
+        if(price) document.querySelector('.btn-confirm').focus(); else if(name) document.getElementById('inp-price').focus(); else document.getElementById('inp-name').focus();
     }
 
     function closeAllModals() {
-        document.getElementById('overlay-bg').style.display = 'none'; 
-        document.getElementById('product-modal').style.display = 'none'; 
-        document.getElementById('search-modal').style.display = 'none'; 
-        document.getElementById('comparison-alert').style.display = 'none'; 
-        document.getElementById('history-modal').style.display = 'none'; 
-        isProcessing = false; 
-        lastScannedCode = null;
-        editingItemId = null; 
+        document.getElementById('overlay-bg').style.display = 'none'; document.getElementById('product-modal').style.display = 'none'; document.getElementById('search-modal').style.display = 'none'; document.getElementById('comparison-alert').style.display = 'none'; document.getElementById('history-modal').style.display = 'none'; isProcessing = false; lastScannedCode = null; editingItemId = null; 
     }
 
-    // --- NUEVO: FUNCIÓN PARA EDITAR ITEM DEL CARRITO ---
     function editCartItem(id) {
-        const item = cart.find(i => i.id === id);
-        if (!item) return;
-        
-        if (!item.barcode || !item.store) {
-            alert("Este producto es antiguo y no se puede editar. Bórralo y escanealo de nuevo.");
-            return;
-        }
-
+        const item = cart.find(i => i.id === id); if (!item) return;
+        if (!item.barcode || !item.store) { alert("Este producto es antiguo y no se puede editar. Bórralo y escanealo de nuevo."); return; }
         editingItemId = id; 
         openProductModal(item.barcode, item.name, item.price, document.getElementById('store-select').value, false, item.category, item.qty);
     }
 
     async function saveAndAdd() {
         const name = document.getElementById('inp-name').value;
-        const price = parseInt(document.getElementById('inp-price').value);
+        const rawPrice = document.getElementById('inp-price').value.replace(/\./g, '');
+        const price = parseInt(rawPrice);
         const store = document.getElementById('store-select').value;
         const category = document.getElementById('inp-category').value;
         const finalBarcode = document.getElementById('modal-barcode').value.trim();
@@ -559,60 +518,20 @@
 
         if (isOnline) {
             const { error } = await db.from('price_reports').insert(productData);
-            if (!error) {
-                finalizeSave(productData, currentQty); 
-            } else { 
-                console.error("Error insert:", error); 
-                showToast(`Error Nube: ${error.message || error.code}`, "alert");
-                addToSyncQueue(productData); 
-                finalizeSave(productData, currentQty, true); 
-            }
-        } else {
-            addToSyncQueue(productData); finalizeSave(productData, currentQty, true);
-        }
+            if (!error) { finalizeSave(productData, currentQty); } 
+            else { console.error("Error insert:", error); showToast(`Error Nube: ${error.message || error.code}`, "alert"); addToSyncQueue(productData); finalizeSave(productData, currentQty, true); }
+        } else { addToSyncQueue(productData); finalizeSave(productData, currentQty, true); }
     }
 
     function finalizeSave(product, qty, offlineMode = false) { 
         addToCart(product, qty); 
-        
-        if (editingItemId) {
-            removeFromCart(editingItemId, false); 
-            editingItemId = null;
-        }
-
-        if (offlineMode && isOnline) { } else {
-            const msg = offlineMode ? "Guardado en local 📡" : "Guardado exitoso ✅";
-            showToast(msg, offlineMode ? "normal" : "success"); 
-        }
+        if (editingItemId) { removeFromCart(editingItemId, false); editingItemId = null; }
+        if (offlineMode && isOnline) { } else { const msg = offlineMode ? "Guardado en local 📡" : "Guardado exitoso ✅"; showToast(msg, offlineMode ? "normal" : "success"); }
         closeAllModals(); 
     }
     
-    function addToCart(product, qty) { 
-        const cartItem = { 
-            id: Date.now() + Math.random(), 
-            name: product.name, 
-            price: product.price, 
-            category: product.category || 'otros', 
-            qty: qty, 
-            subtotal: product.price * qty,
-            barcode: product.barcode,
-            store: product.store
-        }; 
-        cart.push(cartItem); 
-        saveCartToLocal(); 
-        renderCart(); 
-    }
-    
-    function removeFromCart(id, confirmDelete = true) { 
-        if(confirmDelete) {
-            if(navigator.vibrate) navigator.vibrate(50); 
-            if(!confirm("¿Borrar item?")) return; 
-        }
-        cart = cart.filter(item => item.id !== id); 
-        saveCartToLocal(); 
-        renderCart(); 
-    }
-    
+    function addToCart(product, qty) { const cartItem = { id: Date.now() + Math.random(), name: product.name, price: product.price, category: product.category || 'otros', qty: qty, subtotal: product.price * qty, barcode: product.barcode, store: product.store }; cart.push(cartItem); saveCartToLocal(); renderCart(); }
+    function removeFromCart(id, confirmDelete = true) { if(confirmDelete) { if(navigator.vibrate) navigator.vibrate(50); if(!confirm("¿Borrar item?")) return; } cart = cart.filter(item => item.id !== id); saveCartToLocal(); renderCart(); }
     function clearCart() { if(cart.length === 0) return; if(confirm("¿Vaciar carrito?")) { cart = []; saveCartToLocal(); renderCart(); showToast("Carrito vaciado"); } }
     function saveCartToLocal() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
 
@@ -626,50 +545,83 @@
             grouped[cat].forEach(item => {
                 const li = document.createElement('li'); li.className = 'product-item';
                 const qtyBadge = item.qty > 1 ? `<span class="item-qty-badge">${item.qty}x</span>` : '';
-                const displayPrice = item.qty > 1 ? `$${item.subtotal.toLocaleString()} <small style='color:#999'>($${item.price} c/u)</small>` : `$${item.price.toLocaleString()}`;
-                
-                li.innerHTML = `
-                    <div style="flex-grow:1; cursor:pointer;" onclick="editCartItem(${item.id})">
-                        <span style="font-weight:600; font-size:1rem;">${qtyBadge} ${item.name}</span><br>
-                        <span style="color:#666; font-size:0.9rem;">${displayPrice}</span>
-                    </div>
-                    <button class="btn-delete" onclick="removeFromCart(${item.id})">×</button>
-                `;
+                const displayPrice = item.qty > 1 ? `$${item.subtotal.toLocaleString('es-CL')} <small style='color:#999'>($${item.price.toLocaleString('es-CL')} c/u)</small>` : `$${item.price.toLocaleString('es-CL')}`;
+                li.innerHTML = `<div style="flex-grow:1; cursor:pointer;" onclick="editCartItem(${item.id})"><span style="font-weight:600; font-size:1rem;">${qtyBadge} ${item.name}</span><br><span style="color:#666; font-size:0.9rem;">${displayPrice}</span></div><button class="btn-delete" onclick="removeFromCart(${item.id})">×</button>`;
                 list.appendChild(li);
             });
         });
         total = calculatedTotal; updateTotalDisplay();
     }
 
-    function updateTotalDisplay() { 
-        const amountEl = document.getElementById('total-amount'); 
-        const boxEl = document.querySelector('.total-box'); 
-        const limitInput = document.getElementById('budget-limit');
-        const limitValue = limitInput.value.replace(/\./g, '');
-        
-        amountEl.innerText = '$' + total.toLocaleString('es-CL'); 
-        amountEl.className = 'total-price'; 
-        boxEl.className = 'total-box'; 
-        
-        if (limitValue && parseInt(limitValue) > 0) { 
-            const limit = parseInt(limitValue); 
-            if (total > limit) { 
-                amountEl.classList.add('danger'); 
-                boxEl.classList.add('danger'); 
-                if(navigator.vibrate) navigator.vibrate([200, 100, 200]); 
-            } else if (total > limit * 0.9) {
-                amountEl.classList.add('warning'); 
-            }
-        } 
-    }
+    function updateTotalDisplay() { const amountEl = document.getElementById('total-amount'); const boxEl = document.querySelector('.total-box'); const limitInput = document.getElementById('budget-limit'); const limitValue = limitInput.value.replace(/\./g, ''); amountEl.innerText = '$' + total.toLocaleString('es-CL'); amountEl.className = 'total-price'; boxEl.className = 'total-box'; if (limitValue && parseInt(limitValue) > 0) { const limit = parseInt(limitValue); if (total > limit) { amountEl.classList.add('danger'); boxEl.classList.add('danger'); if(navigator.vibrate) navigator.vibrate([200, 100, 200]); } else if (total > limit * 0.9) { amountEl.classList.add('warning'); } } }
     function handleStoreChange() { if(cart.length > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { clearCart(); } }
     function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
     function openSearchModal() { document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('search-modal').style.display = 'block'; document.getElementById('search-input').focus(); }
     function createManualItem() { const text = document.getElementById('search-input').value; if(!text) return; closeAllModals(); const currentStore = document.getElementById('store-select').value; const isNumeric = /^\d+$/.test(text); const code = isNumeric ? text : 'MAN-' + Date.now(); const name = isNumeric ? "" : text; openProductModal(code, name, "", currentStore, true); }
     let debounceTimer;
     function handleSearchTyping(text) { const btn = document.getElementById('btn-create-manual'); btn.style.display = text.length > 0 ? 'block' : 'none'; if(text.length > 0) btn.innerText = /^\d+$/.test(text) ? `➕ Registrar: ${text}` : `➕ Crear: "${text}"`; clearTimeout(debounceTimer); debounceTimer = setTimeout(() => searchInDB(text), 300); }
-    async function searchInDB(text) { if(text.length < 2) return; if (!isOnline) { const cache = getLocalCache(); const results = Object.values(cache).filter(p => p.name.toLowerCase().includes(text.toLowerCase()) || p.barcode.startsWith(text)); renderSearchResults(results); return; } let query = db.from('products').select('*').limit(5); if (/^\d+$/.test(text)) query = query.ilike('barcode', `${text}%`); else query = query.ilike('name', `%${text}%`); let { data: results, error } = await query; if(error) console.error(error); renderSearchResults(results); }
-    function renderSearchResults(results) { const list = document.getElementById('search-results'); list.innerHTML = ''; if(results?.length) { results.forEach(p => { const li = document.createElement('li'); li.className = 'search-result-item'; li.innerHTML = `<div style="flex-grow:1; margin-right:10px;"><span style="font-weight:600;">${p.name}</span><small style="color:#666; display:block;">${p.store.toUpperCase()}</small></div><b>$${p.price}</b>`; li.onclick = () => { closeAllModals(); openProductModal(p.barcode, p.name, p.price, p.store, false, p.category); }; list.appendChild(li); }); } else { list.innerHTML = '<li style="padding:10px;color:#666">Sin resultados</li>'; } }
+    
+    // --- BÚSQUEDA AGRUPADA (NUEVO) ---
+    async function searchInDB(text) {
+        if(text.length < 2) return;
+        const currentStore = document.getElementById('store-select').value;
+        let results = [];
+
+        if (!isOnline) {
+             const cache = getLocalCache();
+             results = Object.values(cache).filter(p => p.name.toLowerCase().includes(text.toLowerCase()) || p.barcode.startsWith(text));
+        } else {
+            let query = db.from('products').select('*').limit(15);
+            if (/^\d+$/.test(text)) query = query.ilike('barcode', `${text}%`); else query = query.ilike('name', `%${text}%`);
+            const { data, error } = await query;
+            if(error) console.error(error);
+            results = data || [];
+        }
+
+        const localResults = results.filter(p => p.store === currentStore);
+        const externalResults = results.filter(p => p.store !== currentStore);
+        renderGroupedSearchResults(localResults, externalResults, currentStore);
+    }
+
+    function renderGroupedSearchResults(local, external, currentStore) {
+        const list = document.getElementById('search-results'); list.innerHTML = ''; 
+        if(local.length === 0 && external.length === 0) { list.innerHTML = '<li style="padding:10px;color:#666">Sin resultados</li>'; return; }
+
+        if (local.length > 0) {
+            const header = document.createElement('li');
+            header.style.cssText = "background:#e8f5e9; color:#2e7d32; padding:5px 10px; font-size:0.8rem; font-weight:bold; border-bottom:1px solid #c8e6c9;";
+            header.innerText = "📍 En este supermercado"; list.appendChild(header);
+            local.forEach(p => {
+                const li = createSearchResultItem(p, true);
+                li.onclick = () => { closeAllModals(); openProductModal(p.barcode, p.name, p.price, p.store, false, p.category); };
+                list.appendChild(li);
+            });
+        }
+
+        if (external.length > 0) {
+            const header = document.createElement('li');
+            header.style.cssText = "background:#f5f5f5; color:#666; padding:5px 10px; font-size:0.8rem; font-weight:bold; border-bottom:1px solid #ddd; margin-top:5px;";
+            header.innerText = "🌍 En otros comercios (Importar)"; list.appendChild(header);
+            external.forEach(p => {
+                const li = createSearchResultItem(p, false);
+                li.onclick = () => { 
+                    closeAllModals(); 
+                    openProductModal(p.barcode, p.name, '', currentStore, false, p.category); 
+                    showToast(`Datos importados de ${p.store.toUpperCase()}`);
+                };
+                list.appendChild(li);
+            });
+        }
+    }
+
+    function createSearchResultItem(p, isLocal) {
+        const li = document.createElement('li'); li.className = 'search-result-item';
+        if(!isLocal) li.style.opacity = '0.9';
+        const storeBadge = isLocal ? `<span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:0.75rem;">AQUÍ</span>` : `<span style="background:#eee; color:#666; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:0.75rem;">${p.store.toUpperCase()}</span>`;
+        li.innerHTML = `<div style="flex-grow:1; margin-right:10px;"><span style="font-weight:600; display:block; line-height:1.2;">${p.name}</span><small style="color:#666; display:flex; align-items:center; gap:5px; margin-top:2px;">${storeBadge}<span>${p.barcode}</span></small></div><b style="font-size:1.1rem; color:#333;">$${new Intl.NumberFormat('es-CL').format(p.price)}</b>`;
+        return li;
+    }
+
     function startScanner() { document.getElementById('scanner-container').style.display = 'block'; html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 }, formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ] }, onScanSuccess).catch(err => html5QrCode.start({ facingMode: "user" }, { fps: 10, qrbox: 250 }, onScanSuccess)); }
     function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-container').style.display = 'none'; html5QrCode.clear(); }).catch(e=>console.error(e)); else document.getElementById('scanner-container').style.display = 'none'; }
 </script>
