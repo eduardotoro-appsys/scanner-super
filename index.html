@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V27</title>
+    <title>Scanner Pro V27.1</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -396,7 +396,7 @@
         input.value = new Intl.NumberFormat('es-CL').format(parseInt(value));
     }
 
-    // --- NUEVO: CARGAR COMPARACIÓN ---
+    // --- CARGAR COMPARACIÓN ---
     async function loadPriceComparison() {
         const code = document.getElementById('modal-barcode').value;
         const currentStore = document.getElementById('store-select').value;
@@ -418,7 +418,6 @@
 
         let html = '<table class="comparison-table"><thead><tr><th>Tienda</th><th>Precio</th><th>Fecha</th></tr></thead><tbody>';
         
-        // Obtener precio actual (limpiando puntos)
         const currentPriceInput = document.getElementById('inp-price').value.replace(/\./g, '');
         const currentPrice = parseInt(currentPriceInput) || 0;
 
@@ -723,7 +722,17 @@
             header.innerText = "📍 En este supermercado"; list.appendChild(header);
             local.forEach(p => {
                 const li = createSearchResultItem(p, true);
-                li.onclick = () => { closeAllModals(); openProductModal(p.barcode, p.name, p.price, p.store, false, p.category); };
+                li.onclick = function() { // Usamos function para asegurar el scope del try catch
+                    try {
+                        closeAllModals(); 
+                        // Seguridad contra Nulos
+                        const safePrice = p.price || 0;
+                        const safeCategory = p.category || 'otros';
+                        openProductModal(p.barcode, p.name, safePrice, p.store, false, safeCategory); 
+                    } catch(err) {
+                        alert("Error al abrir: " + err.message);
+                    }
+                };
                 list.appendChild(li);
             });
         }
@@ -734,10 +743,15 @@
             header.innerText = "🌍 En otros comercios (Importar)"; list.appendChild(header);
             external.forEach(p => {
                 const li = createSearchResultItem(p, false);
-                li.onclick = () => { 
-                    closeAllModals(); 
-                    openProductModal(p.barcode, p.name, '', currentStore, false, p.category); 
-                    showToast(`Datos importados de ${p.store.toUpperCase()}`);
+                li.onclick = function() {
+                    try {
+                        closeAllModals(); 
+                        const safeCategory = p.category || 'otros';
+                        openProductModal(p.barcode, p.name, '', currentStore, false, safeCategory); 
+                        showToast(`Datos importados de ${p.store.toUpperCase()}`);
+                    } catch(err) {
+                        alert("Error al importar: " + err.message);
+                    }
                 };
                 list.appendChild(li);
             });
@@ -748,7 +762,9 @@
         const li = document.createElement('li'); li.className = 'search-result-item';
         if(!isLocal) li.style.opacity = '0.9';
         const storeBadge = isLocal ? `<span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:0.75rem;">AQUÍ</span>` : `<span style="background:#eee; color:#666; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:0.75rem;">${p.store.toUpperCase()}</span>`;
-        li.innerHTML = `<div style="flex-grow:1; margin-right:10px;"><span style="font-weight:600; display:block; line-height:1.2;">${p.name}</span><small style="color:#666; display:flex; align-items:center; gap:5px; margin-top:2px;">${storeBadge}<span>${p.barcode}</span></small></div><b style="font-size:1.1rem; color:#333;">$${new Intl.NumberFormat('es-CL').format(p.price)}</b>`;
+        // Seguridad contra precio Nulo
+        const priceDisplay = p.price ? new Intl.NumberFormat('es-CL').format(p.price) : '???';
+        li.innerHTML = `<div style="flex-grow:1; margin-right:10px;"><span style="font-weight:600; display:block; line-height:1.2;">${p.name}</span><small style="color:#666; display:flex; align-items:center; gap:5px; margin-top:2px;">${storeBadge}<span>${p.barcode}</span></small></div><b style="font-size:1.1rem; color:#333;">$${priceDisplay}</b>`;
         return li;
     }
 
