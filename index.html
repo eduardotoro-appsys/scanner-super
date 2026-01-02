@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V27.2</title>
+    <title>Scanner Pro V28</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -112,7 +112,6 @@
         .total-box.danger { border-color: #d32f2f; background-color: #ffebee; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* MODIFICADO: CONTROL DE PRESUPUESTO */
         .budget-control { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #eee; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; color: #555; }
         .budget-input { 
             width: 100px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; 
@@ -132,6 +131,11 @@
         .status-badge.rejected { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
         .status-badge.pending { background: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
 
+        /* Estilos de Comparación */
+        .comp-badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; }
+        .comp-badge.cheaper { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .comp-badge.expensive { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+
         .modal { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 25px 20px; border-radius: 20px 20px 0 0; z-index: 101; box-shadow: 0 -4px 30px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         
@@ -148,14 +152,8 @@
         .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; }
         .btn-cancel { flex: 1; background: #f5f5f5; color: #333; padding: 15px; border: none; border-radius: 8px; font-weight: bold; }
 
-        /* NUEVOS ESTILOS PARA COMPARACIÓN */
         .btn-compare { background: #e3f2fd; color: #1565c0; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 600; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .btn-compare:active { background: #bbdefb; }
-        .comparison-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; margin-top: 10px; }
-        .comparison-table th { text-align: left; color: #666; border-bottom: 1px solid #eee; padding: 6px 4px; font-size: 0.8rem; }
-        .comparison-table td { padding: 8px 4px; border-bottom: 1px solid #f5f5f5; }
-        .comparison-table .cheaper { color: #2e7d32; font-weight: bold; }
-        .comparison-table .expensive { color: #c62828; }
 
         #search-results { list-style: none; padding: 0; margin-bottom: 15px; max-height: 200px; overflow-y: auto; }
         .search-result-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
@@ -247,11 +245,10 @@
         <span id="store-badge" style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;"></span>
     </div>
     
-    <!-- NUEVA SECCIÓN DE COMPARACIÓN -->
-    <button class="btn-compare" onclick="loadPriceComparison()">
+    <!-- BOTÓN COMPARAR -->
+    <button class="btn-compare" onclick="openComparisonModal()">
         <span>🔍 Comparar Precios</span>
     </button>
-    <div id="comparison-results" style="margin-bottom: 15px;"></div>
     
     <div style="text-align:right; margin-bottom:10px;">
         <button onclick="openHistoryModal()" style="background:none; border:none; color:#1976d2; font-size:0.9rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:flex-end; gap:5px; width:100%;">
@@ -307,6 +304,19 @@
     <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="document.getElementById('history-modal').style.display='none'">Cerrar</button>
 </div>
 
+<!-- NUEVO MODAL COMPARACIÓN -->
+<div id="comparison-modal" class="modal" style="z-index: 200;">
+    <div class="modal-header">
+        <strong>🔍 Comparación de Precios</strong>
+        <button onclick="document.getElementById('comparison-modal').style.display='none'" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">×</button>
+    </div>
+    <div style="font-size:0.8rem; color:#666; margin-bottom:10px;">Precios en otros supermercados:</div>
+    <ul id="comparison-list" class="product-list" style="max-height: 300px; overflow-y: auto;">
+        <li style="padding:10px; color:#666;">Buscando...</li>
+    </ul>
+    <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="document.getElementById('comparison-modal').style.display='none'">Cerrar</button>
+</div>
+
 <div id="toast">Mensaje...</div>
 
 <script>
@@ -320,7 +330,7 @@
     let db;
     try { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.error("Error init Supabase:", e); }
 
-    let cart = []; let total = 0; let lastScannedCode = null; isProcessing = false; html5QrCode = null; currentQty = 1; isOnline = navigator.onLine; currentUser = null; 
+    let cart = []; let total = 0; let lastScannedCode = null; let isProcessing = false; let html5QrCode = null; let currentQty = 1; let isOnline = navigator.onLine; let currentUser = null; 
     let editingItemId = null; 
 
     // --- AUTH ---
@@ -396,49 +406,59 @@
         input.value = new Intl.NumberFormat('es-CL').format(parseInt(value));
     }
 
-    // --- CARGAR COMPARACIÓN ---
-    async function loadPriceComparison() {
-        const code = document.getElementById('modal-barcode').value;
+    // --- NUEVO: MODAL DE COMPARACIÓN ---
+    async function openComparisonModal() {
+        const barcode = document.getElementById('modal-barcode').value;
         const currentStore = document.getElementById('store-select').value;
-        const container = document.getElementById('comparison-results');
         
-        container.innerHTML = '<div style="text-align:center; padding:10px; color:#666;">Buscando en otras tiendas...</div>';
-        container.style.display = 'block';
+        document.getElementById('comparison-modal').style.display = 'block';
+        const list = document.getElementById('comparison-list');
+        list.innerHTML = '<li>Buscando precios...</li>';
         
-        const { data: others } = await db.from('products')
-            .select('store, price, updated_at')
-            .eq('barcode', code)
-            .neq('store', currentStore)
-            .order('price', { ascending: true });
-
-        if (!others || others.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:10px; color:#999; font-size:0.9rem;">No se encontraron precios en otros supermercados para este producto.</div>';
-            return;
-        }
-
-        let html = '<table class="comparison-table"><thead><tr><th>Tienda</th><th>Precio</th><th>Fecha</th></tr></thead><tbody>';
-        
+        // Obtener precio actual (limpiando puntos)
         const currentPriceInput = document.getElementById('inp-price').value.replace(/\./g, '');
         const currentPrice = parseInt(currentPriceInput) || 0;
 
+        const { data: others, error } = await db.from('products')
+            .select('store, price, updated_at')
+            .eq('barcode', barcode)
+            .neq('store', currentStore)
+            .order('price', { ascending: true });
+
+        if (error || !others || others.length === 0) {
+            list.innerHTML = '<li style="padding:15px; text-align:center; color:#999;">No hay precios en otros comercios.</li>';
+            return;
+        }
+
+        list.innerHTML = '';
         others.forEach(o => {
             const date = new Date(o.updated_at).toLocaleDateString();
-            let priceClass = '';
-            let icon = '';
+            let badgeClass = 'pending';
+            let badgeText = 'Igual';
+            let icon = '➖';
             
             if (currentPrice > 0) {
-                if (o.price < currentPrice) { priceClass = 'cheaper'; icon = '📉'; }
-                else if (o.price > currentPrice) { priceClass = 'expensive'; icon = '📈'; }
+                if (o.price < currentPrice) { 
+                    badgeClass = 'cheaper'; badgeText = 'Más Barato'; icon = '📉';
+                } else if (o.price > currentPrice) { 
+                    badgeClass = 'expensive'; badgeText = 'Más Caro'; icon = '📈';
+                }
             }
 
-            html += `<tr>
-                <td>${o.store.toUpperCase()}</td>
-                <td class="${priceClass}">$${new Intl.NumberFormat('es-CL').format(o.price)} ${icon}</td>
-                <td style="font-size:0.75rem; color:#999;">${date}</td>
-            </tr>`;
+            const li = document.createElement('li');
+            li.className = 'product-item';
+            li.innerHTML = `
+                <div style="width:100%">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>$${new Intl.NumberFormat('es-CL').format(o.price)}</strong>
+                        <span class="comp-badge ${badgeClass}">${icon} ${badgeText}</span>
+                    </div>
+                    <span style="font-size:0.8rem; color:#666;">en ${o.store.toUpperCase()}</span><br>
+                    <small style="color:#999">Actualizado: ${date}</small>
+                </div>
+            `;
+            list.appendChild(li);
         });
-        html += '</tbody></table>';
-        container.innerHTML = html;
     }
 
     function getLocalCache() { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
@@ -524,10 +544,6 @@
         document.getElementById('overlay-bg').style.display = 'block'; 
         document.getElementById('product-modal').style.display = 'block';
         
-        // Limpiar comparación anterior
-        document.getElementById('comparison-results').innerHTML = '';
-        document.getElementById('comparison-results').style.display = 'none';
-        
         const barcodeInput = document.getElementById('modal-barcode'); 
         barcodeInput.value = code; 
         barcodeInput.disabled = !isEditableBarcode;
@@ -548,8 +564,8 @@
         document.getElementById('overlay-bg').style.display = 'none'; 
         document.getElementById('product-modal').style.display = 'none'; 
         document.getElementById('search-modal').style.display = 'none'; 
-        // document.getElementById('comparison-alert').style.display = 'none'; // ELIMINADO PARA EVITAR ERROR
         document.getElementById('history-modal').style.display = 'none'; 
+        document.getElementById('comparison-modal').style.display = 'none'; // CLOSE COMPARISON TOO
         isProcessing = false; 
         lastScannedCode = null;
         editingItemId = null; 
