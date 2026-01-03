@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V29.33</title>
+    <title>Scanner Pro V29.4</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -112,7 +112,7 @@
         .total-box.danger { border-color: #d32f2f; background-color: #ffebee; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* MODIFICADO: CONTROL DE PRESUPUESTO */
+        /* CONTROL DE PRESUPUESTO */
         .budget-control { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #eee; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; color: #555; }
         .budget-input { 
             width: 100px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; 
@@ -144,7 +144,7 @@
         select { background-color: white; }
         #modal-barcode { font-family: monospace; font-size: 0.9rem; color: #666; background: #f9f9f9; margin-bottom: 10px; border: 1px dashed #ccc; }
         
-        /* SELECTOR UNIDAD (NUEVO) */
+        /* SELECTOR UNIDAD */
         .unit-selector { display: flex; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
         .unit-option { flex: 1; padding: 10px; text-align: center; cursor: pointer; background: #f9f9f9; border: none; font-weight: 500; font-size: 0.9rem; }
         .unit-option.active { background: #2e7d32; color: white; font-weight: bold; }
@@ -160,9 +160,6 @@
         .modal-btns { display: flex; gap: 10px; margin-top: 10px; }
         .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; }
         .btn-cancel { flex: 1; background: #f5f5f5; color: #333; padding: 15px; border: none; border-radius: 8px; font-weight: bold; }
-
-        .btn-compare { background: #e3f2fd; color: #1565c0; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 600; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .btn-compare:active { background: #bbdefb; }
 
         #search-results { list-style: none; padding: 0; margin-bottom: 15px; max-height: 200px; overflow-y: auto; }
         .search-result-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
@@ -194,7 +191,7 @@
             <div id="connection-status" class="connection-badge">📡 Offline</div>
             <button id="sync-btn" class="sync-btn" onclick="syncOfflineData()">☁️ Al día</button>
             <div class="user-profile" id="user-profile"></div>
-            <!-- BOTÓN RESET (NUEVO) -->
+            <!-- BOTÓN RESET -->
             <button class="reset-btn" onclick="resetApp()" title="Reparar App">🛠️</button>
         </div>
 
@@ -269,7 +266,7 @@
     <label style="font-size:0.8rem; color:#666;">Código:</label>
     <input type="text" id="modal-barcode" disabled>
     <input type="text" id="inp-name" placeholder="Nombre (ej: Leche)" autocomplete="off">
-    <!-- INPUT PRECIO MODIFICADO -->
+    <!-- INPUT PRECIO -->
     <input type="text" id="inp-price" placeholder="Precio Unidad ($)" inputmode="numeric" oninput="formatCurrencyInput(this)">
     
     <!-- SELECTOR DE UNIDAD -->
@@ -303,7 +300,7 @@
             <button class="btn-qty" onclick="adjustQty(1)">+</button>
         </div>
         <div id="qty-controls-kg" class="qty-controls" style="display:none;">
-            <input type="text" inputmode="decimal" id="inp-qty-kg" placeholder="0.000" step="0.001">
+            <input type="text" inputmode="numeric" id="inp-qty-kg" placeholder="0,000" oninput="formatKgInput(this)">
             <span style="font-weight:bold;">kg</span>
         </div>
     </div>
@@ -355,7 +352,7 @@
 
     let cart = []; let total = 0; let lastScannedCode = null; let isProcessing = false; let html5QrCode = null; let currentQty = 1; let isOnline = navigator.onLine; let currentUser = null; 
     let editingItemId = null; 
-    let currentUnit = 'UN'; // Estado de la unidad actual
+    let currentUnit = 'UN'; 
 
     // --- AUTH ---
     if (db) {
@@ -430,7 +427,19 @@
         input.value = new Intl.NumberFormat('es-CL').format(parseInt(value));
     }
 
-    // --- NUEVO: GESTIÓN DE UNIDADES ---
+    // --- NUEVO: MÁSCARA AUTOMÁTICA DE PESO ---
+    function formatKgInput(input) {
+        let value = input.value.replace(/\D/g, ''); // Solo dígitos
+        if (value === '') {
+            input.value = '';
+            return;
+        }
+        // Asume que los últimos 3 dígitos son decimales
+        let num = parseInt(value) / 1000;
+        // Formatea con 3 decimales usando coma
+        input.value = num.toFixed(3).replace('.', ',');
+    }
+
     function setUnitType(type) {
         currentUnit = type;
         const btnUn = document.getElementById('btn-unit-un');
@@ -443,7 +452,7 @@
             btnUn.classList.add('active'); btnKg.classList.remove('active');
             qtyUn.style.display = 'flex'; qtyKg.style.display = 'none';
             priceLabel.placeholder = "Precio Unidad ($)";
-            currentQty = Math.max(1, Math.round(currentQty)); // Reset a entero
+            currentQty = Math.max(1, Math.round(currentQty)); 
             document.getElementById('qty-display').innerText = currentQty;
         } else {
             btnKg.classList.add('active'); btnUn.classList.remove('active');
@@ -562,10 +571,6 @@
             lastShownPrice = item.price; shownCount++;
             const date = new Date(item.created_at).toLocaleDateString();
             
-            // Tendencia Simple
-            let trend = '➖'; let color = '#666';
-            // (Lógica simplificada, ideal comparar con item+1)
-            
             const li = document.createElement('li'); li.className = 'product-item';
             li.innerHTML = `<div style="width:100%"><div style="display:flex; justify-content:space-between; align-items:center;"><strong style="font-size:1.1rem;">$${new Intl.NumberFormat('es-CL').format(item.price)}</strong></div><small style="color:#999">Registrado el ${date}</small></div>`;
             list.appendChild(li);
@@ -579,8 +584,6 @@
         document.getElementById('overlay-bg').style.display = 'block'; 
         document.getElementById('product-modal').style.display = 'block';
         
-        // CORRECCIÓN: NO INTENTAR LIMPIAR 'comparison-results' YA QUE NO EXISTE AQUÍ
-        
         const barcodeInput = document.getElementById('modal-barcode'); 
         barcodeInput.value = code; 
         barcodeInput.disabled = !isEditableBarcode;
@@ -592,12 +595,10 @@
         document.getElementById('inp-category').value = category || 'otros'; 
         document.getElementById('store-badge').innerText = store.toUpperCase();
         
-        // SETEAR UNIDAD
         setUnitType(unitType);
 
-        // Si es KG, poner la cantidad en el input
         if (unitType === 'KG') {
-            document.getElementById('inp-qty-kg').value = initialQty !== 1 ? initialQty : '';
+            document.getElementById('inp-qty-kg').value = initialQty !== 1 ? initialQty.toFixed(3).replace('.', ',') : '';
         }
         
         checkCrossStorePrice(code, store, price);
@@ -632,10 +633,11 @@
         const category = document.getElementById('inp-category').value;
         const finalBarcode = document.getElementById('modal-barcode').value.trim();
         
-        // OBTENER CANTIDAD CORRECTA
         let finalQty = currentQty;
         if (currentUnit === 'KG') {
-            const val = parseFloat(document.getElementById('inp-qty-kg').value);
+            // Convierte "0,550" a "0.550" para parsear como número
+            const valStr = document.getElementById('inp-qty-kg').value.replace(',', '.');
+            const val = parseFloat(valStr);
             if (isNaN(val) || val <= 0) { showToast("⚠️ Ingresa el peso en Kg", "alert"); return; }
             finalQty = val;
         }
@@ -644,7 +646,7 @@
         
         const productData = { 
             barcode: finalBarcode, store: store, name: name, price: price, category: category,
-            unit_type: currentUnit, // NUEVO CAMPO
+            unit_type: currentUnit, 
             user_id: currentUser ? currentUser.id : null 
         };
 
@@ -670,9 +672,8 @@
             name: product.name, 
             price: product.price, 
             category: product.category || 'otros', 
-            unit_type: product.unit_type || 'UN', // Guardar tipo en carrito
+            unit_type: product.unit_type || 'UN', 
             qty: qty, 
-            // CÁLCULO DE SUBTOTAL: Si es KG, es Precio * Peso. Si es UN, es Precio * Cantidad
             subtotal: Math.round(product.price * qty),
             barcode: product.barcode,
             store: product.store
@@ -700,7 +701,6 @@
             grouped[cat].forEach(item => {
                 const li = document.createElement('li'); li.className = 'product-item';
                 
-                // RENDERIZADO DINÁMICO SEGÚN UNIDAD
                 let qtyBadge = '';
                 let displayPrice = '';
                 
@@ -729,16 +729,12 @@
     function handleStoreChange() { if(cart.length > 0 && confirm("¿Cambiaste de tienda? Se limpiará el carrito.")) { clearCart(); } }
     function showToast(msg, type="normal") { const x = document.getElementById("toast"); x.innerText = msg; x.className = "show " + type; setTimeout(()=> x.className=x.className.replace("show "+type,""), 3000); }
     
-    // --- FUNCIÓN DE BÚSQUEDA MANUAL ACTUALIZADA (CLEAN ON OPEN) ---
     function openSearchModal() { 
         document.getElementById('overlay-bg').style.display = 'block'; 
         document.getElementById('search-modal').style.display = 'block'; 
-        
-        // RESET INPUTS Y RESULTADOS
         document.getElementById('search-input').value = '';
         document.getElementById('search-results').innerHTML = '';
         document.getElementById('btn-create-manual').style.display = 'none';
-        
         document.getElementById('search-input').focus(); 
     }
 
@@ -746,7 +742,6 @@
     let debounceTimer;
     function handleSearchTyping(text) { const btn = document.getElementById('btn-create-manual'); btn.style.display = text.length > 0 ? 'block' : 'none'; if(text.length > 0) btn.innerText = /^\d+$/.test(text) ? `➕ Registrar: ${text}` : `➕ Crear: "${text}"`; clearTimeout(debounceTimer); debounceTimer = setTimeout(() => searchInDB(text), 300); }
     
-    // --- BÚSQUEDA AGRUPADA (NUEVO) ---
     async function searchInDB(text) {
         if(text.length < 2) return;
         const currentStore = document.getElementById('store-select').value;
@@ -778,13 +773,10 @@
             header.innerText = "📍 En este supermercado"; list.appendChild(header);
             local.forEach(p => {
                 const li = createSearchResultItem(p, true);
-                li.onclick = function() { // Usamos function para asegurar el scope del try catch
+                li.onclick = function() { 
                     try {
                         closeAllModals(); 
-                        // Seguridad contra Nulos
-                        const safePrice = p.price || 0;
-                        const safeCategory = p.category || 'otros';
-                        openProductModal(p.barcode, p.name, safePrice, p.store, false, safeCategory, 1, p.unit_type || 'UN'); 
+                        openProductModal(p.barcode, p.name, p.price || 0, p.store, false, p.category || 'otros', 1, p.unit_type || 'UN'); 
                     } catch(err) {
                         alert("Error al abrir: " + err.message);
                     }
@@ -802,8 +794,7 @@
                 li.onclick = function() {
                     try {
                         closeAllModals(); 
-                        const safeCategory = p.category || 'otros';
-                        openProductModal(p.barcode, p.name, '', currentStore, false, safeCategory, 1, p.unit_type || 'UN'); 
+                        openProductModal(p.barcode, p.name, '', currentStore, false, p.category || 'otros', 1, p.unit_type || 'UN'); 
                         showToast(`Datos importados de ${p.store.toUpperCase()}`);
                     } catch(err) {
                         alert("Error al importar: " + err.message);
@@ -818,7 +809,6 @@
         const li = document.createElement('li'); li.className = 'search-result-item';
         if(!isLocal) li.style.opacity = '0.9';
         const storeBadge = isLocal ? `<span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:0.75rem;">AQUÍ</span>` : `<span style="background:#eee; color:#666; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:0.75rem;">${p.store.toUpperCase()}</span>`;
-        // Seguridad contra precio Nulo
         const priceDisplay = p.price ? new Intl.NumberFormat('es-CL').format(p.price) : '???';
         li.innerHTML = `<div style="flex-grow:1; margin-right:10px;"><span style="font-weight:600; display:block; line-height:1.2;">${p.name}</span><small style="color:#666; display:flex; align-items:center; gap:5px; margin-top:2px;">${storeBadge}<span>${p.barcode}</span></small></div><b style="font-size:1.1rem; color:#333;">$${priceDisplay}</b>`;
         return li;
