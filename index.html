@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V29.0</title>
+    <title>Scanner Pro V29.1</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -563,11 +563,11 @@
 
     function openProductModal(code, name, price, store, isEditableBarcode, category = 'otros', initialQty = 1, unitType = 'UN') {
         currentQty = initialQty; 
+        document.getElementById('qty-display').innerText = currentQty;
         document.getElementById('overlay-bg').style.display = 'block'; 
         document.getElementById('product-modal').style.display = 'block';
         
-        document.getElementById('comparison-results').innerHTML = '';
-        document.getElementById('comparison-results').style.display = 'none';
+        // CORRECCIÓN: NO INTENTAR LIMPIAR 'comparison-results' YA QUE NO EXISTE AQUÍ
         
         const barcodeInput = document.getElementById('modal-barcode'); 
         barcodeInput.value = code; 
@@ -721,17 +721,23 @@
     let debounceTimer;
     function handleSearchTyping(text) { const btn = document.getElementById('btn-create-manual'); btn.style.display = text.length > 0 ? 'block' : 'none'; if(text.length > 0) btn.innerText = /^\d+$/.test(text) ? `➕ Registrar: ${text}` : `➕ Crear: "${text}"`; clearTimeout(debounceTimer); debounceTimer = setTimeout(() => searchInDB(text), 300); }
     
+    // --- BÚSQUEDA AGRUPADA (NUEVO) ---
     async function searchInDB(text) {
         if(text.length < 2) return;
         const currentStore = document.getElementById('store-select').value;
         let results = [];
+
         if (!isOnline) {
-             const cache = getLocalCache(); results = Object.values(cache).filter(p => p.name.toLowerCase().includes(text.toLowerCase()) || p.barcode.startsWith(text));
+             const cache = getLocalCache();
+             results = Object.values(cache).filter(p => p.name.toLowerCase().includes(text.toLowerCase()) || p.barcode.startsWith(text));
         } else {
             let query = db.from('products').select('*').limit(15);
             if (/^\d+$/.test(text)) query = query.ilike('barcode', `${text}%`); else query = query.ilike('name', `%${text}%`);
-            const { data, error } = await query; if(error) console.error(error); results = data || [];
+            const { data, error } = await query;
+            if(error) console.error(error);
+            results = data || [];
         }
+
         const localResults = results.filter(p => p.store === currentStore);
         const externalResults = results.filter(p => p.store !== currentStore);
         renderGroupedSearchResults(localResults, externalResults, currentStore);
@@ -740,29 +746,57 @@
     function renderGroupedSearchResults(local, external, currentStore) {
         const list = document.getElementById('search-results'); list.innerHTML = ''; 
         if(local.length === 0 && external.length === 0) { list.innerHTML = '<li style="padding:10px;color:#666">Sin resultados</li>'; return; }
+
         if (local.length > 0) {
-            const header = document.createElement('li'); header.style.cssText = "background:#e8f5e9; color:#2e7d32; padding:5px 10px; font-size:0.8rem; font-weight:bold; border-bottom:1px solid #c8e6c9;"; header.innerText = "📍 En este supermercado"; list.appendChild(header);
+            const header = document.createElement('li');
+            header.style.cssText = "background:#e8f5e9; color:#2e7d32; padding:5px 10px; font-size:0.8rem; font-weight:bold; border-bottom:1px solid #c8e6c9;";
+            header.innerText = "📍 En este supermercado"; list.appendChild(header);
             local.forEach(p => {
                 const li = createSearchResultItem(p, true);
-                li.onclick = function() { try { closeAllModals(); openProductModal(p.barcode, p.name, p.price, p.store, false, p.category, 1, p.unit_type || 'UN'); } catch(err) { alert("Error al abrir: " + err.message); } };
+                li.onclick = function() { // Usamos function para asegurar el scope del try catch
+                    try {
+                        closeAllModals(); 
+                        // Seguridad contra Nulos
+                        const safePrice = p.price || 0;
+                        const safeCategory = p.category || 'otros';
+                        openProductModal(p.barcode, p.name, safePrice, p.store, false, safeCategory); 
+                    } catch(err) {
+                        alert("Error al abrir: " + err.message);
+                    }
+                };
                 list.appendChild(li);
             });
         }
+
         if (external.length > 0) {
-            const header = document.createElement('li'); header.style.cssText = "background:#f5f5f5; color:#666; padding:5px 10px; font-size:0.8rem; font-weight:bold; border-bottom:1px solid #ddd; margin-top:5px;"; header.innerText = "🌍 En otros comercios (Importar)"; list.appendChild(header);
+            const header = document.createElement('li');
+            header.style.cssText = "background:#f5f5f5; color:#666; padding:5px 10px; font-size:0.8rem; font-weight:bold; border-bottom:1px solid #ddd; margin-top:5px;";
+            header.innerText = "🌍 En otros comercios (Importar)"; list.appendChild(header);
             external.forEach(p => {
                 const li = createSearchResultItem(p, false);
-                li.onclick = function() { try { closeAllModals(); openProductModal(p.barcode, p.name, '', currentStore, false, p.category, 1, p.unit_type || 'UN'); showToast(`Datos importados de ${p.store.toUpperCase()}`); } catch(err) { alert("Error al importar: " + err.message); } };
+                li.onclick = function() {
+                    try {
+                        closeAllModals(); 
+                        const safeCategory = p.category || 'otros';
+                        openProductModal(p.barcode, p.name, '', currentStore, false, safeCategory); 
+                        showToast(`Datos importados de ${p.store.toUpperCase()}`);
+                    } catch(err) {
+                        alert("Error al importar: " + err.message);
+                    }
+                };
                 list.appendChild(li);
             });
         }
     }
 
     function createSearchResultItem(p, isLocal) {
-        const li = document.createElement('li'); li.className = 'search-result-item'; if(!isLocal) li.style.opacity = '0.9';
+        const li = document.createElement('li'); li.className = 'search-result-item';
+        if(!isLocal) li.style.opacity = '0.9';
         const storeBadge = isLocal ? `<span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:0.75rem;">AQUÍ</span>` : `<span style="background:#eee; color:#666; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:0.75rem;">${p.store.toUpperCase()}</span>`;
+        // Seguridad contra precio Nulo
         const priceDisplay = p.price ? new Intl.NumberFormat('es-CL').format(p.price) : '???';
-        li.innerHTML = `<div style="flex-grow:1; margin-right:10px;"><span style="font-weight:600; display:block; line-height:1.2;">${p.name}</span><small style="color:#666; display:flex; align-items:center; gap:5px; margin-top:2px;">${storeBadge}<span>${p.barcode}</span></small></div><b style="font-size:1.1rem; color:#333;">$${priceDisplay}</b>`; return li;
+        li.innerHTML = `<div style="flex-grow:1; margin-right:10px;"><span style="font-weight:600; display:block; line-height:1.2;">${p.name}</span><small style="color:#666; display:flex; align-items:center; gap:5px; margin-top:2px;">${storeBadge}<span>${p.barcode}</span></small></div><b style="font-size:1.1rem; color:#333;">$${priceDisplay}</b>`;
+        return li;
     }
 
     function startScanner() { document.getElementById('scanner-container').style.display = 'block'; html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 }, formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ] }, onScanSuccess).catch(err => html5QrCode.start({ facingMode: "user" }, { fps: 10, qrbox: 250 }, onScanSuccess)); }
