@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V32.0</title>
+    <title>Scanner Pro V33.0</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -35,7 +35,6 @@
             display: flex; align-items: center; gap: 10px; cursor: pointer;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;
         }
-        .btn-google:active { transform: scale(0.95); }
         .btn-google img { width: 20px; height: 20px; }
 
         /* HEADER APP */
@@ -49,34 +48,35 @@
 
         .top-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .connection-badge { font-size: 0.75rem; color: white; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 12px; display: none; }
-        .sync-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 15px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 500; }
+        .sync-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 15px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 500; }
         .sync-btn.pending { background: #ff9800; border-color: #f57c00; animation: pulse-border 2s infinite; }
         @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(255, 152, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); } }
         .user-profile { display: flex; align-items: center; gap: 8px; }
         .user-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; cursor: pointer;}
         .reset-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0 5px; opacity: 0.8; }
 
-        /* SELECTORES DINÁMICOS */
-        .store-config { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 12px; }
-        .styled-select {
-            font-size: 0.95rem; padding: 10px 15px; border-radius: 12px; border: none; 
-            font-weight: 600; width: 90%; text-align: center; text-align-last: center;
-            background: rgba(255,255,255,0.95); color: #333; outline: none; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); -webkit-appearance: none; appearance: none;
+        /* NUEVA BARRA DE UBICACIÓN (ESTILO DELIVERY) */
+        .location-bar {
+            width: 100%; max-width: 400px; background: rgba(255,255,255,0.15);
+            border-radius: 12px; padding: 10px 15px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            color: white; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+            transition: background 0.2s;
         }
-        .branch-row { width: 90%; position: relative; }
-        #branch-select { font-size: 0.85rem; padding: 8px; border-radius: 10px; }
+        .location-bar:active { background: rgba(255,255,255,0.25); }
+        .location-info { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+        .location-info b { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px; }
 
-        .header-controls { display: flex; gap: 8px; width: 100%; max-width: 400px; }
-        .btn-main { flex: 1.5; background-color: white; color: #2e7d32; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-secondary { flex: 1; background-color: rgba(255,255,255,0.2); color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .header-controls { display: flex; gap: 10px; width: 100%; max-width: 400px; }
+        .btn-main { flex: 2; background-color: white; color: #2e7d32; padding: 12px; border: none; border-radius: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-secondary { flex: 1; background-color: rgba(255,255,255,0.25); color: white; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
         /* DASHBOARD */
         #app-content { display: none; }
         #scanner-container { width: 100%; background: black; min-height: 250px; position: relative; overflow: hidden; display: none; }
         #reader video { width: 100%; height: auto; object-fit: contain !important; }
         .dashboard { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 100px; }
-        .total-box { background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.06); margin-bottom: 15px; border: 2px solid transparent; position: relative; }
+        .total-box { background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.06); margin-bottom: 15px; border: 2px solid transparent; }
         .total-price { font-size: 2.8rem; font-weight: 900; color: #2e7d32; margin: 5px 0; }
         .total-price.danger { color: #d32f2f; }
         
@@ -86,7 +86,7 @@
 
         /* LISTA */
         .product-list { list-style: none; padding: 0; }
-        .category-header { background: #f6ffed; color: #389e0d; padding: 10px 15px; border-radius: 8px; font-weight: 800; margin-top: 20px; margin-bottom: 8px; font-size: 0.85rem; border-left: 4px solid #52c41a; }
+        .category-header { background: #f6ffed; color: #389e0d; padding: 10px 15px; border-radius: 8px; font-weight: 800; margin-top: 20px; margin-bottom: 8px; font-size: 0.8rem; border-left: 4px solid #52c41a; text-transform: uppercase; letter-spacing: 0.5px; }
         .product-item { background: white; border-radius: 12px; margin-bottom: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .item-qty-badge { background: #2e7d32; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; flex-shrink: 0; }
         .btn-delete { background: #fff1f0; color: #f5222d; border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
@@ -96,10 +96,12 @@
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         input, select { width: 100%; padding: 14px; border: 1.5px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; margin-bottom: 12px; outline: none; transition: border-color 0.2s; }
-        input:focus { border-color: #2e7d32; }
+        input:focus, select:focus { border-color: #2e7d32; }
         .modal-btns { display: flex; gap: 10px; margin-top: 15px; }
         .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 16px; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; }
         .btn-cancel { flex: 1; background: #f5f5f5; color: #666; padding: 16px; border: none; border-radius: 12px; font-weight: bold; }
+
+        .styled-select { -webkit-appearance: none; appearance: none; background: #fff url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M10.293%203.293L6%207.586%201.707%203.293A1%201%200%2000.293%204.707l5%205a1%201%200%20001.414%200l5-5a1%201%200%2010-1.414-1.414z%22%2F%3E%3C%2Fsvg%3E") no-repeat right 15px center; }
 
         #toast { visibility: hidden; min-width: 200px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 14px 24px; position: fixed; z-index: 2000; left: 50%; bottom: 30px; transform: translateX(-50%); opacity: 0; transition: all 0.3s; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
@@ -135,20 +137,18 @@
             <button class="reset-btn" onclick="resetApp()">🛠️</button>
         </div>
 
-        <div class="store-config">
-            <!-- SELECTOR DE TIENDA DINÁMICO -->
-            <select id="store-select" class="styled-select" onchange="handleStoreChange()">
-                <option value="">Cargando tiendas...</option>
-            </select>
-            <!-- SELECTOR DE SUCURSAL DINÁMICO -->
-            <select id="branch-select" class="styled-select" style="font-size:0.8rem; width:70%; padding:8px;" onchange="handleBranchChange()">
-                <option value="">Selecciona sucursal</option>
-            </select>
+        <!-- BARRA DE UBICACIÓN COMPACTA -->
+        <div class="location-bar" onclick="openLocationModal()">
+            <div class="location-info">
+                <span>📍</span>
+                <b id="display-location">Cargando ubicación...</b>
+            </div>
+            <span style="font-size: 0.7rem; opacity: 0.8;">CAMBIAR ▼</span>
         </div>
 
         <div class="header-controls">
-            <button id="start-btn" class="btn-main" onclick="startScanner()">📷 Escanear</button>
-            <button class="btn-secondary" onclick="openSearchModal()">✍️ Manual</button>
+            <button id="start-btn" class="btn-main" onclick="startScanner()">📷 ESCANEAR</button>
+            <button class="btn-secondary" onclick="openSearchModal()">✍️ MANUAL</button>
         </div>
     </header>
 
@@ -177,6 +177,22 @@
 </div>
 
 <div id="overlay-bg" onclick="closeAllModals()"></div>
+
+<!-- MODAL SELECCIÓN DE UBICACIÓN -->
+<div id="location-modal" class="modal">
+    <div class="modal-header"><strong>📍 Selecciona Tienda</strong></div>
+    <label style="font-size:0.8rem; color:#999;">Cadena:</label>
+    <select id="store-select" class="styled-select" onchange="handleStoreChange()">
+        <option value="">Cargando tiendas...</option>
+    </select>
+    
+    <label style="font-size:0.8rem; color:#999;">Sucursal:</label>
+    <select id="branch-select" class="styled-select" onchange="handleBranchChange()">
+        <option value="">Primero elige tienda</option>
+    </select>
+    
+    <button class="btn-confirm" style="width:100%; margin-top:10px;" onclick="closeAllModals()">Confirmar Ubicación</button>
+</div>
 
 <!-- MODAL BÚSQUEDA -->
 <div id="search-modal" class="modal">
@@ -277,13 +293,12 @@
         updateSyncUI();
     });
 
-    // --- GESTIÓN DE CONEXIÓN Y SYNC ---
     window.addEventListener('online', () => { isOnline = true; updateConnectionStatus(); syncOfflineData(); });
     window.addEventListener('offline', () => { isOnline = false; updateConnectionStatus(); });
 
     function updateConnectionStatus() {
         const badge = document.getElementById('connection-status');
-        if(isOnline) { badge.style.display = 'none'; } else { badge.style.display = 'inline-block'; }
+        if(badge) badge.style.display = isOnline ? 'none' : 'inline-block';
     }
 
     function updateSyncUI() {
@@ -309,7 +324,6 @@
     async function syncOfflineData() {
         const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); 
         if (queue.length === 0) return;
-        
         showToast(`Sincronizando ${queue.length} cambios...`);
         const remainingQueue = [];
         for (const item of queue) { 
@@ -346,14 +360,14 @@
         document.getElementById('user-profile').innerHTML = `<img src="${avatar}" class="user-avatar" onclick="if(confirm('¿Salir?')) db.auth.signOut()">`;
     }
 
-    // --- GESTIÓN DE TIENDAS Y SUCURSALES ---
+    // --- GESTIÓN DE TIENDAS (MODAL) ---
     async function loadStores() {
         const { data, error } = await db.from('stores').select('*').order('name');
         if (error) return showToast("Error cargando tiendas", "error");
         
         allStores = data;
         const select = document.getElementById('store-select');
-        select.innerHTML = '<option value="">🏢 Selecciona Supermercado</option>';
+        select.innerHTML = '<option value="">🏢 Selecciona Tienda</option>';
         data.forEach(s => {
             select.innerHTML += `<option value="${s.id}">${s.name}</option>`;
         });
@@ -361,7 +375,9 @@
         const lastStore = localStorage.getItem('last_store_id');
         if (lastStore) {
             select.value = lastStore;
-            handleStoreChange();
+            await handleStoreChange();
+        } else {
+            updateLocationDisplay();
         }
     }
 
@@ -383,6 +399,8 @@
 
         const lastBranch = localStorage.getItem(`last_branch_${storeId}`);
         if (lastBranch) branchSelect.value = lastBranch;
+        
+        updateLocationDisplay();
     }
 
     async function handleBranchChange() {
@@ -390,7 +408,7 @@
         const storeId = document.getElementById('store-select').value;
         
         if (branchSelect.value === 'NEW') {
-            const name = prompt("Nombre de la nueva sucursal (ej: Providencia, Mall Plaza):");
+            const name = prompt("Nombre de la sucursal (ej: Los Leones, Ñuñoa):");
             if (name) {
                 const { data, error } = await db.from('branches').insert({ store_id: storeId, name: name.trim() }).select().single();
                 if (!error) {
@@ -398,21 +416,38 @@
                     await handleStoreChange();
                     branchSelect.value = data.id;
                     localStorage.setItem(`last_branch_${storeId}`, data.id);
-                } else {
-                    showToast("Error al crear sucursal", "error");
-                    branchSelect.value = "";
                 }
-            } else {
-                branchSelect.value = "";
-            }
+            } else { branchSelect.value = ""; }
         } else {
             localStorage.setItem(`last_branch_${storeId}`, branchSelect.value);
         }
+        updateLocationDisplay();
+    }
+
+    function updateLocationDisplay() {
+        const storeSelect = document.getElementById('store-select');
+        const branchSelect = document.getElementById('branch-select');
+        const display = document.getElementById('display-location');
+        
+        const storeName = storeSelect.options[storeSelect.selectedIndex]?.text.replace('🏢 ', '') || 'Tienda';
+        const branchName = branchSelect.options[branchSelect.selectedIndex]?.text.replace('📍 ', '') || 'Sucursal';
+        
+        if (storeSelect.value && branchSelect.value) {
+            display.innerHTML = `${storeName} • ${branchName}`;
+        } else {
+            display.innerHTML = "Selecciona Tienda y Sucursal";
+        }
+    }
+
+    function openLocationModal() {
+        document.getElementById('overlay-bg').style.display = 'block';
+        document.getElementById('location-modal').style.display = 'block';
     }
 
     // --- ESCÁNER ---
     function startScanner() {
-        if (!document.getElementById('branch-select').value) return showToast("⚠️ Selecciona una sucursal primero");
+        const bid = document.getElementById('branch-select').value;
+        if (!bid) { openLocationModal(); return showToast("⚠️ Selecciona ubicación primero"); }
         document.getElementById('scanner-container').style.display = 'block';
         html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, onScanSuccess);
@@ -432,9 +467,7 @@
 
     // --- BÚSQUEDA Y PRODUCTO ---
     async function checkProductInDB(barcode) {
-        const storeId = document.getElementById('store-select').value;
         const branchId = document.getElementById('branch-select').value;
-        
         showToast("🔍 Buscando...");
         const { data: local } = await db.from('products').select('*').eq('barcode', barcode).eq('branch_id', branchId).maybeSingle();
         
@@ -447,8 +480,10 @@
     }
 
     function openProductModal(prod, isNew) {
-        const store = allStores.find(s => s.id === document.getElementById('store-select').value);
-        const branch = currentBranches.find(b => b.id === document.getElementById('branch-select').value);
+        const storeId = document.getElementById('store-select').value;
+        const branchId = document.getElementById('branch-select').value;
+        const store = allStores.find(s => s.id === storeId);
+        const branch = currentBranches.find(b => b.id === branchId);
 
         document.getElementById('overlay-bg').style.display = 'block';
         document.getElementById('product-modal').style.display = 'block';
@@ -465,8 +500,10 @@
     }
 
     async function saveAndAdd() {
-        const store = allStores.find(s => s.id === document.getElementById('store-select').value);
-        const branch = currentBranches.find(b => b.id === document.getElementById('branch-select').value);
+        const sid = document.getElementById('store-select').value;
+        const bid = document.getElementById('branch-select').value;
+        const store = allStores.find(s => s.id === sid);
+        const branch = currentBranches.find(b => b.id === bid);
         const barcode = document.getElementById('modal-barcode').value;
         const name = document.getElementById('inp-name').value.trim();
         const price = parseInt(document.getElementById('inp-price').value.replace(/\./g, ''));
@@ -476,15 +513,14 @@
 
         let qty = currentQty;
         if (currentUnit === 'KG') {
-            const valStr = document.getElementById('inp-qty-kg').value.replace(',', '.');
-            qty = parseFloat(valStr);
+            qty = parseFloat(document.getElementById('inp-qty-kg').value.replace(',', '.'));
             if (isNaN(qty) || qty <= 0) return showToast("⚠️ Ingresa el peso");
         }
 
         const report = {
             barcode, name, price, category, unit_type: currentUnit,
-            store: store.name, store_id: store.id,
-            branch: branch.name, branch_id: branch.id,
+            store: store.name, store_id: sid,
+            branch: branch.name, branch_id: bid,
             user_id: currentUser.id
         };
 
@@ -576,12 +612,11 @@
         updateTotalDisplay(totalVal);
     }
 
-    function updateTotalDisplay(total) {
+    function updateTotalDisplay(totalValue) {
         const amountEl = document.getElementById('total-amount');
         const limitValue = document.getElementById('budget-limit').value.replace(/\./g, '');
         if (limitValue && parseInt(limitValue) > 0) {
-            const limit = parseInt(limitValue);
-            if (total > limit) amountEl.classList.add('danger');
+            if (totalValue > parseInt(limitValue)) amountEl.classList.add('danger');
             else amountEl.classList.remove('danger');
         } else {
             amountEl.classList.remove('danger');
@@ -611,6 +646,7 @@
     }
 
     function openSearchModal() { 
+        if (!document.getElementById('branch-select').value) { openLocationModal(); return showToast("⚠️ Selecciona ubicación"); }
         document.getElementById('overlay-bg').style.display = 'block'; 
         document.getElementById('search-modal').style.display = 'block'; 
         document.getElementById('search-input').value = '';
@@ -622,8 +658,6 @@
     function createManualItem() { 
         const text = document.getElementById('search-input').value; 
         if(!text) return; 
-        const currentStoreId = document.getElementById('store-select').value;
-        const currentBranchId = document.getElementById('branch-select').value;
         closeAllModals(); 
         const code = /^\d+$/.test(text) ? text : 'MAN-' + Date.now(); 
         openProductModal({ barcode: code, name: /^\d+$/.test(text) ? "" : text, price: '', category: 'otros', unit_type: 'UN' }, true); 
