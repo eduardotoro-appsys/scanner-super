@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V34.0</title>
+    <title>Scanner Pro V35.0</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -35,7 +35,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
-        /* HEADER ULTRA COMPACTO (V34) */
+        /* HEADER ULTRA COMPACTO */
         header { 
             background-color: #2e7d32; padding: 10px 15px; 
             position: sticky; top: 0; z-index: 100; 
@@ -84,6 +84,8 @@
         .total-price { font-size: 2.8rem; font-weight: 900; color: #2e7d32; margin: 5px 0; }
         .total-price.danger { color: #d32f2f; }
 
+        .btn-compare-basket { background: #e8f5e9; color: #2e7d32; border: 1.5px solid #c8e6c9; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.8rem; margin-top: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+
         .budget-control { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #eee; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; color: #666; }
         .budget-input { width: 100px; padding: 6px; border: 1px solid #ddd; border-radius: 8px; text-align: center; font-size: 1rem; font-weight: bold; }
 
@@ -97,26 +99,38 @@
         .product-item { background: white; border-radius: 15px; margin-bottom: 10px; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
         .item-qty-badge { background: #2e7d32; color: white; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; }
         .btn-delete { color: #ffccc7; border: none; background: none; cursor: pointer; font-size: 1.2rem; padding: 5px; }
-        .btn-delete:hover { color: #f5222d; }
 
         /* MODALES */
-        .modal { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 25px 20px; border-radius: 24px 24px 0 0; z-index: 2000; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .modal { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 25px 20px; border-radius: 24px 24px 0 0; z-index: 2000; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
         input, select { width: 100%; padding: 14px; border: 1.5px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; margin-bottom: 12px; outline: none; }
-        input:focus { border-color: #2e7d32; }
         .modal-btns { display: flex; gap: 10px; margin-top: 15px; }
         .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 16px; border: none; border-radius: 12px; font-weight: bold; }
         .btn-cancel { flex: 1; background: #f5f5f5; color: #666; padding: 16px; border: none; border-radius: 12px; font-weight: bold; }
+
+        /* COMPARADOR DE CANASTA */
+        .store-comparison-card { background: #fff; border: 1.5px solid #eee; border-radius: 16px; padding: 15px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .store-comparison-card.best { border-color: #2e7d32; background: #f1f8f1; }
+        .store-comparison-card.expensive { border-color: #ffebee; }
+        .compare-row { display: flex; justify-content: space-between; align-items: center; }
+        .compare-total { font-size: 1.4rem; font-weight: 800; }
+        .match-badge { font-size: 0.65rem; background: #eee; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .diff-badge { font-size: 0.75rem; font-weight: bold; padding: 4px 8px; border-radius: 6px; }
+        .diff-badge.plus { background: #ffebee; color: #c62828; }
+        .diff-badge.minus { background: #e8f5e9; color: #2e7d32; }
+
+        .toggle-switch { display: flex; background: #eee; border-radius: 30px; padding: 4px; margin-bottom: 20px; }
+        .toggle-option { flex: 1; text-align: center; padding: 8px; font-size: 0.8rem; font-weight: 700; color: #777; cursor: pointer; border-radius: 25px; transition: all 0.2s; }
+        .toggle-option.active { background: white; color: #2e7d32; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
         #toast { visibility: hidden; min-width: 200px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 12px 24px; position: fixed; z-index: 3000; left: 50%; bottom: 30px; transform: translateX(-50%); opacity: 0; transition: all 0.3s; font-weight: 600; }
         #toast.show { visibility: visible; opacity: 1; bottom: 40px; }
         #overlay-bg { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 1000; }
         
-        .unit-selector { display: flex; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
         .unit-option { flex: 1; padding: 10px; text-align: center; cursor: pointer; background: #f9f9f9; border: none; font-weight: 500; font-size: 0.9rem; }
         .unit-option.active { background: #2e7d32; color: white; font-weight: bold; }
-        
-        .search-result-item { padding: 12px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .qty-wrapper { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #f5f5f5; padding: 10px; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -149,7 +163,6 @@
         </div>
     </header>
 
-    <!-- BOTONES FLOTANTES -->
     <div class="fab-container">
         <button class="fab-btn fab-secondary" onclick="openSearchModal()" title="Ingreso Manual">✍️</button>
         <button class="fab-btn fab-main" onclick="startScanner()" title="Escanear Producto">📷</button>
@@ -157,7 +170,7 @@
 
     <div id="scanner-container">
         <div id="reader"></div>
-        <button onclick="stopScanner()" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.6); color:white; border:none; padding:8px 15px; border-radius:10px; font-weight:bold;">CERRAR X</button>
+        <button onclick="stopScanner()" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.6); color:white; border:none; padding:8px 15px; border-radius:10px; font-weight:bold;">X</button>
     </div>
 
     <div class="dashboard">
@@ -165,9 +178,13 @@
             <small style="color:#888; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Estás gastando</small>
             <div class="total-price" id="total-amount">$0</div>
             
+            <button class="btn-compare-basket" onclick="openComparisonBasket()">
+                📊 Comparar Canasta
+            </button>
+            
             <div class="budget-control">
                 <span>Meta: $</span>
-                <input type="text" inputmode="numeric" class="budget-input" id="budget-limit" placeholder="Ej: 50.000" oninput="handleBudgetInput(this)">
+                <input type="text" inputmode="numeric" class="budget-input" id="budget-limit" placeholder="..." oninput="handleBudgetInput(this)">
             </div>
         </div>
 
@@ -182,217 +199,218 @@
 
 <div id="overlay-bg" onclick="closeAllModals()"></div>
 
-<!-- MODALES (IGUALES A V33 PERO CON ESTILO MEJORADO) -->
+<!-- MODAL COMPARACIÓN DE CANASTA -->
+<div id="basket-comparison-modal" class="modal">
+    <div class="modal-header">
+        <strong>📊 Comparador de Ahorro</strong>
+        <button onclick="closeAllModals()" style="border:none; background:none; font-size:1.5rem;">×</button>
+    </div>
+    
+    <div class="toggle-switch">
+        <div id="comp-mode-proj" class="toggle-option active" onclick="setCompareMode('PROJ')">Proyectado (Total)</div>
+        <div id="comp-mode-real" class="toggle-option" onclick="setCompareMode('REAL')">Solo Coincidentes</div>
+    </div>
+
+    <div id="comparison-results-list">
+        <p style="text-align:center; color:#999; padding:20px;">Analizando precios...</p>
+    </div>
+    
+    <p style="font-size:0.7rem; color:#888; text-align:center; margin-top:15px; line-height:1.2;">
+        * Los precios proyectados usan el valor de tu tienda actual si el producto no existe en la otra tienda.
+    </p>
+    <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="closeAllModals()">Cerrar</button>
+</div>
+
+<!-- OTROS MODALES -->
 <div id="location-modal" class="modal">
     <div class="modal-header"><strong>📍 Ubicación de Compra</strong></div>
-    <label style="font-size:0.8rem; color:#999; margin-bottom:5px; display:block;">Supermercado:</label>
-    <select id="store-select" onchange="handleStoreChange()">
-        <option value="">Cargando tiendas...</option>
-    </select>
-    <label style="font-size:0.8rem; color:#999; margin-bottom:5px; display:block;">Sucursal Local:</label>
-    <select id="branch-select" onchange="handleBranchChange()">
-        <option value="">Primero elige tienda</option>
-    </select>
-    <button class="btn-confirm" style="width:100%; margin-top:10px;" onclick="closeAllModals()">Listo</button>
+    <select id="store-select" onchange="handleStoreChange()"></select>
+    <select id="branch-select" onchange="handleBranchChange()"></select>
+    <button class="btn-confirm" style="width:100%; margin-top:10px;" onclick="closeAllModals()">Confirmar</button>
 </div>
 
 <div id="search-modal" class="modal">
     <div class="modal-header"><strong>🔍 Buscar Producto</strong></div>
     <input type="text" id="search-input" placeholder="Nombre o código..." onkeyup="handleSearchTyping(this.value)">
-    <ul id="search-results" style="list-style:none; padding:0; max-height: 250px; overflow-y: auto;"></ul>
+    <ul id="search-results" style="list-style:none; padding:0; max-height:200px; overflow-y: auto;"></ul>
     <button class="btn-confirm" id="btn-create-manual" style="display:none; margin-bottom:10px;" onclick="createManualItem()">➕ Crear Nuevo</button>
-    <button class="btn-cancel" style="width:100%;" onclick="closeAllModals()">Cerrar</button>
 </div>
 
 <div id="product-modal" class="modal">
     <div class="modal-header">
-        <strong>📝 Detalle del Producto</strong>
-        <div style="text-align: right;">
-            <div id="store-label" style="font-weight:bold; color:#2e7d32; font-size: 0.9rem;"></div>
+        <strong>📝 Detalle</strong>
+        <div style="text-align:right;">
+            <div id="store-label" style="font-weight:bold; color:#2e7d32;"></div>
             <div id="branch-label" style="font-size:0.7rem; color:#888;"></div>
         </div>
     </div>
-    
-    <div id="comparison-alert" style="display:none; padding:12px; background:#fff8e1; color:#f57f17; border-radius:10px; margin-bottom:15px; font-size:0.85rem; border: 1px solid #ffe082;"></div>
-
-    <input type="text" id="modal-barcode" style="background:#f5f5f5; color:#888; font-family: monospace;" disabled>
-    <input type="text" id="inp-name" placeholder="Nombre (ej: Aceite de Oliva)">
+    <input type="text" id="modal-barcode" style="background:#f5f5f5;" disabled>
+    <input type="text" id="inp-name" placeholder="Nombre">
     <input type="text" id="inp-price" placeholder="Precio ($)" inputmode="numeric" oninput="formatCurrencyInput(this)">
-    
-    <div class="unit-selector">
-        <button id="btn-unit-un" class="unit-option active" onclick="setUnitType('UN')">Por Unidad</button>
-        <button id="btn-unit-kg" class="unit-option" onclick="setUnitType('KG')">A Granel (Kg)</button>
+    <div class="unit-selector" style="display:flex; margin-bottom:15px; border-radius:8px; overflow:hidden; border:1px solid #ddd;">
+        <button id="btn-unit-un" class="unit-option active" onclick="setUnitType('UN')">Unidad</button>
+        <button id="btn-unit-kg" class="unit-option" onclick="setUnitType('KG')">Kg</button>
     </div>
-
     <select id="inp-category">
-        <option value="frutas">🥦 Frutas y Verduras</option>
-        <option value="carnes">🥩 Carnes y Pescados</option>
-        <option value="lacteos">🧀 Lácteos y Huevos</option>
-        <option value="despensa">🥫 Despensa</option>
-        <option value="panaderia">🍞 Panadería</option>
-        <option value="bebidas">🥤 Bebidas</option>
-        <option value="aseo">🧹 Aseo y Limpieza</option>
-        <option value="otros">📦 Otros</option>
+        <option value="frutas">🥦 Frutas</option><option value="carnes">🥩 Carnes</option><option value="lacteos">🧀 Lácteos</option><option value="despensa">🥫 Despensa</option><option value="otros">📦 Otros</option>
     </select>
-    
-    <div class="qty-wrapper" style="background: #f8faf9; padding: 12px; border-radius: 12px;">
-        <span style="font-weight: 700; color: #555;">Cantidad:</span>
-        <div id="qty-controls-un" class="qty-controls" style="display: flex; align-items: center; gap: 20px;">
-            <button style="width:36px; height:36px; border-radius:50%; border:none; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.1); font-weight:bold; color:#2e7d32;" onclick="adjustQty(-1)">−</button>
-            <span id="qty-display" style="font-size:1.4rem; font-weight:800;">1</span>
-            <button style="width:36px; height:36px; border-radius:50%; border:none; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.1); font-weight:bold; color:#2e7d32;" onclick="adjustQty(1)">+</button>
-        </div>
-        <div id="qty-controls-kg" class="qty-controls" style="display:none; align-items:center; gap:5px;">
-            <input type="text" inputmode="numeric" id="inp-qty-kg" placeholder="0,000" style="width:80px; margin:0; text-align:center;" oninput="formatKgInput(this)">
-            <b style="color:#2e7d32">kg</b>
-        </div>
-    </div>
-    
-    <div class="modal-btns">
-        <button class="btn-cancel" onclick="closeAllModals()">Cerrar</button>
-        <button class="btn-confirm" onclick="saveAndAdd()">AGREGAR 🛒</button>
-    </div>
+    <div id="qty-controls-un" class="qty-wrapper"><button onclick="adjustQty(-1)">−</button><span id="qty-display">1</span><button onclick="adjustQty(1)">+</button></div>
+    <div id="qty-controls-kg" class="qty-wrapper" style="display:none;"><input type="text" inputmode="numeric" id="inp-qty-kg" oninput="formatKgInput(this)"><b>kg</b></div>
+    <button class="btn-confirm" style="width:100%" onclick="saveAndAdd()">AGREGAR 🛒</button>
 </div>
 
-<div id="toast">Mensaje...</div>
+<div id="toast"></div>
 
 <script>
-    // ==========================================
-    // ⚠️ CONFIGURACIÓN DB
-    // ==========================================
     const SUPABASE_URL = 'https://hviansyzbyzkfdmgujah.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2aWFuc3l6Ynl6a2ZkbWd1amFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMTA0OTAsImV4cCI6MjA4Mjc4NjQ5MH0.1_vn4udmbsQkKRrTMiRFatpfqtRyiq_5VBgdsKjJwW8';
-    
     let db;
     try { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) { console.error(e); }
 
-    const CACHE_KEY = 'scanner_pro_products'; 
-    const QUEUE_KEY = 'scanner_pro_queue'; 
-    const CART_KEY = 'scpro_cart';
-    const VIEW_KEY = 'view_pref';
+    const CACHE_KEY = 'scanner_pro_products'; const QUEUE_KEY = 'scanner_pro_queue'; const CART_KEY = 'scpro_cart'; const VIEW_KEY = 'view_pref';
+    let cart = []; let allStores = []; let currentBranches = []; let currentUser = null; let isOnline = navigator.onLine; let isGrouped = localStorage.getItem(VIEW_KEY) !== 'false';
+    let currentQty = 1; let currentUnit = 'UN'; let html5QrCode = null; let isProcessing = false;
+    let comparisonMode = 'PROJ'; // 'PROJ' o 'REAL'
 
-    let cart = []; 
-    let allStores = []; 
-    let currentBranches = [];
-    let currentUser = null;
-    let isOnline = navigator.onLine;
-    let isGrouped = localStorage.getItem(VIEW_KEY) !== 'false';
-    let currentQty = 1;
-    let currentUnit = 'UN';
-    let html5QrCode = null;
-    let isProcessing = false;
+    const CATEGORIES = { 'frutas': '🥦 Frutas y Verduras', 'carnes': '🥩 Carnes y Pescados', 'lacteos': '🧀 Lácteos y Huevos', 'despensa': '🥫 Despensa', 'otros': '📦 Otros' };
+    const CAT_ORDER = ["frutas", "carnes", "lacteos", "despensa", "otros"];
 
-    const CATEGORIES = { 'frutas': '🥦 Frutas y Verduras', 'carnes': '🥩 Carnes y Pescados', 'lacteos': '🧀 Lácteos y Huevos', 'despensa': '🥫 Despensa', 'panaderia': '🍞 Panadería', 'bebidas': '🥤 Bebidas', 'aseo': '🧹 Aseo', 'otros': '📦 Otros' };
-    const CAT_ORDER = ["frutas", "carnes", "lacteos", "panaderia", "despensa", "bebidas", "aseo", "otros"];
-
-    window.addEventListener('load', () => {
-        loadCart();
-        updateSyncUI();
-    });
-
-    window.addEventListener('online', () => { isOnline = true; document.querySelector('header').classList.remove('offline'); syncOfflineData(); });
-    window.addEventListener('offline', () => { isOnline = true; document.querySelector('header').classList.add('offline'); });
-
-    function updateSyncUI() {
-        const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-        const dot = document.getElementById('sync-dot');
-        if (dot) dot.className = queue.length > 0 ? 'sync-dot active' : 'sync-dot';
-    }
-
-    async function syncOfflineData() {
-        const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); 
-        if (queue.length === 0) return;
-        showToast(`Sincronizando ${queue.length}...`);
-        const remainingQueue = [];
-        for (const item of queue) { 
-            const { error } = await db.from('price_reports').insert(item); 
-            if (error) remainingQueue.push(item);
-        }
-        localStorage.setItem(QUEUE_KEY, JSON.stringify(remainingQueue)); 
-        updateSyncUI();
-        if (remainingQueue.length === 0) showToast("Nube actualizada ✅");
-    }
+    window.addEventListener('load', () => { loadCart(); updateSyncUI(); });
 
     if (db) {
         db.auth.onAuthStateChange((event, session) => {
-            if (session) {
-                currentUser = session.user;
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app-content').style.display = 'block';
-                document.getElementById('header-avatar').src = currentUser.user_metadata.avatar_url || "";
-                loadStores();
-            } else {
-                document.getElementById('login-screen').style.display = 'flex';
-                document.getElementById('app-content').style.display = 'none';
-            }
+            if (session) { currentUser = session.user; document.getElementById('login-screen').style.display = 'none'; document.getElementById('app-content').style.display = 'block'; document.getElementById('header-avatar').src = currentUser.user_metadata.avatar_url || ""; loadStores(); }
+            else { document.getElementById('login-screen').style.display = 'flex'; document.getElementById('app-content').style.display = 'none'; }
         });
     }
 
     async function signInWithGoogle() { await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } }); }
 
     async function loadStores() {
-        const { data, error } = await db.from('stores').select('*').order('name');
-        if (error) return;
-        allStores = data;
-        const select = document.getElementById('store-select');
-        select.innerHTML = '<option value="">🏢 Selecciona Tienda</option>';
-        data.forEach(s => select.innerHTML += `<option value="${s.id}">${s.name}</option>`);
-        const lastStore = localStorage.getItem('last_store_id');
-        if (lastStore) { select.value = lastStore; await handleStoreChange(); } 
-        else { updateLocationDisplay(); }
+        const { data } = await db.from('stores').select('*').order('name');
+        allStores = data || [];
+        const s = document.getElementById('store-select'); s.innerHTML = '<option value="">🏢 Elige Tienda</option>';
+        allStores.forEach(x => s.innerHTML += `<option value="${x.id}">${x.name}</option>`);
+        const ls = localStorage.getItem('last_store_id'); if (ls) { s.value = ls; await handleStoreChange(); } else { updateLocationDisplay(); }
     }
 
     async function handleStoreChange() {
-        const storeId = document.getElementById('store-select').value;
-        if (!storeId) return;
-        localStorage.setItem('last_store_id', storeId);
-        const { data, error } = await db.from('branches').select('*').eq('store_id', storeId).order('name');
+        const sid = document.getElementById('store-select').value; if (!sid) return;
+        localStorage.setItem('last_store_id', sid);
+        const { data } = await db.from('branches').select('*').eq('store_id', sid).order('name');
         currentBranches = data || [];
-        const bs = document.getElementById('branch-select');
-        bs.innerHTML = '<option value="">📍 Selecciona Sucursal</option><option value="NEW">➕ Nueva Sucursal...</option>';
+        const bs = document.getElementById('branch-select'); bs.innerHTML = '<option value="">📍 Elige Sucursal</option><option value="NEW">➕ Nueva...</option>';
         currentBranches.forEach(b => bs.innerHTML += `<option value="${b.id}">${b.name}</option>`);
-        const lb = localStorage.getItem(`last_branch_${storeId}`);
-        if (lb) bs.value = lb;
+        const lb = localStorage.getItem(`last_branch_${sid}`); if (lb) bs.value = lb;
         updateLocationDisplay();
     }
 
     async function handleBranchChange() {
-        const bs = document.getElementById('branch-select');
-        const sid = document.getElementById('store-select').value;
-        if (bs.value === 'NEW') {
-            const n = prompt("Nombre sucursal:");
-            if (n) {
-                const { data, error } = await db.from('branches').insert({ store_id: sid, name: n.trim() }).select().single();
-                if (!error) { await handleStoreChange(); bs.value = data.id; localStorage.setItem(`last_branch_${sid}`, data.id); }
-            } else { bs.value = ""; }
-        } else { localStorage.setItem(`last_branch_${sid}`, bs.value); }
+        const bs = document.getElementById('branch-select'); const sid = document.getElementById('store-select').value;
+        if (bs.value === 'NEW') { const n = prompt("Nombre sucursal:"); if (n) { const { data } = await db.from('branches').insert({ store_id: sid, name: n.trim() }).select().single(); if (data) { await handleStoreChange(); bs.value = data.id; localStorage.setItem(`last_branch_${sid}`, data.id); } } else { bs.value = ""; } }
+        else { localStorage.setItem(`last_branch_${sid}`, bs.value); }
         updateLocationDisplay();
     }
 
     function updateLocationDisplay() {
-        const s = document.getElementById('store-select');
-        const b = document.getElementById('branch-select');
+        const s = document.getElementById('store-select'); const b = document.getElementById('branch-select');
         const sn = s.options[s.selectedIndex]?.text.replace('🏢 ', '') || 'Tienda';
         const bn = b.options[b.selectedIndex]?.text.replace('📍 ', '') || 'Sucursal';
-        document.getElementById('display-location').innerHTML = s.value && b.value ? `${sn} • ${bn}` : "Selecciona Ubicación";
+        document.getElementById('display-location').innerHTML = s.value && b.value ? `${sn} • ${bn}` : "Configurar Ubicación";
     }
 
-    function openLocationModal() { document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('location-modal').style.display = 'block'; }
+    // --- LÓGICA DE COMPARACIÓN DE CANASTA ---
+    async function openComparisonBasket() {
+        if (cart.length === 0) return showToast("⚠️ Carrito vacío");
+        document.getElementById('overlay-bg').style.display = 'block';
+        document.getElementById('basket-comparison-modal').style.display = 'block';
+        renderBasketComparison();
+    }
 
+    function setCompareMode(mode) {
+        comparisonMode = mode;
+        document.getElementById('comp-mode-proj').className = mode === 'PROJ' ? 'toggle-option active' : 'toggle-option';
+        document.getElementById('comp-mode-real').className = mode === 'REAL' ? 'toggle-option active' : 'toggle-option';
+        renderBasketComparison();
+    }
+
+    async function renderBasketComparison() {
+        const list = document.getElementById('comparison-results-list');
+        list.innerHTML = '<p style="text-align:center; padding:20px;">Analizando precios...</p>';
+        
+        const barcodes = [...new Set(cart.map(i => i.barcode))];
+        const currentTotal = cart.reduce((acc, i) => acc + i.subtotal, 0);
+        const currentStoreId = document.getElementById('store-select').value;
+
+        // Traer todos los precios de estos barcodes en cualquier tienda
+        const { data: allPrices, error } = await db.from('products').select('*').in('barcode', barcodes);
+        if (error) return list.innerHTML = '<p>Error al obtener datos</p>';
+
+        const storesData = [];
+        allStores.forEach(store => {
+            if (store.id === currentStoreId) return;
+
+            let totalInStore = 0;
+            let matches = 0;
+            let totalBarcodes = barcodes.length;
+
+            cart.forEach(item => {
+                const priceData = allPrices.find(p => p.barcode === item.barcode && p.store_id === store.id);
+                if (priceData) {
+                    totalInStore += Math.round(priceData.price * item.qty);
+                    matches++;
+                } else if (comparisonMode === 'PROJ') {
+                    // Si no existe, imputar precio actual
+                    totalInStore += item.subtotal;
+                }
+            });
+
+            if (comparisonMode === 'REAL' && matches === 0) return;
+
+            storesData.push({ store, total: totalInStore, matches, totalItems: totalBarcodes });
+        });
+
+        // Ordenar del más barato al más caro
+        storesData.sort((a, b) => a.total - b.total);
+
+        list.innerHTML = '';
+        if (storesData.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Sin datos suficientes para comparar en otros locales.</p>';
+            return;
+        }
+
+        storesData.forEach(res => {
+            const diff = res.total - currentTotal;
+            const diffClass = diff <= 0 ? 'minus' : 'plus';
+            const diffSymbol = diff <= 0 ? '' : '+';
+            const matchPercent = Math.round((res.matches / res.totalItems) * 100);
+
+            const card = document.createElement('div');
+            card.className = `store-comparison-card ${diff <= 0 ? 'best' : ''}`;
+            card.innerHTML = `
+                <div class="compare-row">
+                    <span style="font-weight:800; color:#2e7d32;">${res.store.name}</span>
+                    <span class="match-badge">${res.matches}/${res.totalItems} productos (${matchPercent}%)</span>
+                </div>
+                <div class="compare-row">
+                    <span class="compare-total">$${res.total.toLocaleString('es-CL')}</span>
+                    <span class="diff-badge ${diffClass}">${diffSymbol}$${diff.toLocaleString('es-CL')}</span>
+                </div>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    // --- FUNCIONES CORE (CÁMARA, MANUAL, CARRITO) ---
     function startScanner() {
         if (!document.getElementById('branch-select').value) { openLocationModal(); return showToast("⚠️ Elige ubicación"); }
         document.getElementById('scanner-container').style.display = 'block';
         html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, onScanSuccess);
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (t) => { if (isProcessing) return; isProcessing = true; stopScanner(); checkProductInDB(t); });
     }
-
     function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-container').style.display = 'none'; }); else document.getElementById('scanner-container').style.display = 'none'; }
-
-    async function onScanSuccess(text) { if (isProcessing) return; isProcessing = true; stopScanner(); checkProductInDB(text); }
-
     async function checkProductInDB(barcode) {
-        const bid = document.getElementById('branch-select').value;
-        showToast("🔍 Buscando...");
+        const bid = document.getElementById('branch-select').value; showToast("🔍 Buscando...");
         const { data: loc } = await db.from('products').select('*').eq('barcode', barcode).eq('branch_id', bid).maybeSingle();
         if (loc) openProductModal(loc, false);
         else {
@@ -400,109 +418,65 @@
             openProductModal(ref ? { ...ref, price: '', branch_id: bid } : { barcode, name: '', price: '', category: 'otros', unit_type: 'UN' }, true);
         }
     }
-
     function openProductModal(p, isNew) {
-        const sid = document.getElementById('store-select').value;
-        const bid = document.getElementById('branch-select').value;
-        document.getElementById('overlay-bg').style.display = 'block';
-        document.getElementById('product-modal').style.display = 'block';
+        const sid = document.getElementById('store-select').value; const bid = document.getElementById('branch-select').value;
+        document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('product-modal').style.display = 'block';
         document.getElementById('store-label').innerText = allStores.find(x=>x.id===sid)?.name || '';
         document.getElementById('branch-label').innerText = currentBranches.find(x=>x.id===bid)?.name || '';
-        document.getElementById('modal-barcode').value = p.barcode;
-        document.getElementById('inp-name').value = p.name || '';
+        document.getElementById('modal-barcode').value = p.barcode; document.getElementById('inp-name').value = p.name || '';
         document.getElementById('inp-price').value = p.price ? new Intl.NumberFormat('es-CL').format(p.price) : '';
         document.getElementById('inp-category').value = p.category || 'otros';
-        setUnitType(p.unit_type || 'UN');
-        if(p.price) document.getElementById('inp-price').focus(); else document.getElementById('inp-name').focus();
+        setUnitType(p.unit_type || 'UN'); if(p.price) document.getElementById('inp-price').focus(); else document.getElementById('inp-name').focus();
     }
-
     async function saveAndAdd() {
-        const sid = document.getElementById('store-select').value;
-        const bid = document.getElementById('branch-select').value;
-        const barcode = document.getElementById('modal-barcode').value;
-        const name = document.getElementById('inp-name').value.trim();
-        const price = parseInt(document.getElementById('inp-price').value.replace(/\./g, ''));
-        const cat = document.getElementById('inp-category').value;
+        const sid = document.getElementById('store-select').value; const bid = document.getElementById('branch-select').value;
+        const name = document.getElementById('inp-name').value.trim(); const price = parseInt(document.getElementById('inp-price').value.replace(/\./g, ''));
         if (!name || isNaN(price)) return showToast("⚠️ Faltan datos");
-        let qty = currentQty;
-        if (currentUnit === 'KG') {
-            qty = parseFloat(document.getElementById('inp-qty-kg').value.replace(',', '.'));
-            if (isNaN(qty) || qty <= 0) return showToast("⚠️ Ingresa el peso");
-        }
-        const rep = { barcode, name, price, category: cat, unit_type: currentUnit, store: allStores.find(x=>x.id===sid).name, store_id: sid, branch: currentBranches.find(x=>x.id===bid).name, branch_id: bid, user_id: currentUser.id };
+        let qty = currentUnit === 'KG' ? parseFloat(document.getElementById('inp-qty-kg').value.replace(',', '.')) : currentQty;
+        const rep = { barcode: document.getElementById('modal-barcode').value, name, price, category: document.getElementById('inp-category').value, unit_type: currentUnit, store: allStores.find(x=>x.id===sid).name, store_id: sid, branch: currentBranches.find(x=>x.id===bid).name, branch_id: bid, user_id: currentUser.id };
         if (isOnline) { await db.from('price_reports').insert(rep); finalizeSave(rep, qty, false); }
-        else { const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); queue.push(rep); localStorage.setItem(QUEUE_KEY, JSON.stringify(queue)); updateSyncUI(); finalizeSave(rep, qty, true); }
+        else { const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); q.push(rep); localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); updateSyncUI(); finalizeSave(rep, qty, true); }
     }
-
-    function finalizeSave(r, q, off) { 
-        cart.push({ ...r, id: Date.now(), qty: q, subtotal: Math.round(r.price * q) });
-        saveCart(); renderCart(); closeAllModals(); showToast(off ? "En cola 📡" : "Agregado 🛒");
-    }
-
+    function finalizeSave(r, q, off) { cart.push({ ...r, id: Date.now(), qty: q, subtotal: Math.round(r.price * q) }); saveCart(); renderCart(); closeAllModals(); showToast(off ? "En cola 📡" : "Agregado 🛒"); }
     function formatKgInput(i) { let v = i.value.replace(/\D/g, ''); if (!v) return i.value = ''; i.value = (parseInt(v) / 1000).toFixed(3).replace('.', ','); }
     function formatCurrencyInput(i) { let v = i.value.replace(/\D/g, ''); i.value = v ? new Intl.NumberFormat('es-CL').format(parseInt(v)) : ''; }
-    function setUnitType(t) {
-        currentUnit = t;
-        document.getElementById('btn-unit-un').className = t === 'UN' ? 'unit-option active' : 'unit-option';
-        document.getElementById('btn-unit-kg').className = t === 'KG' ? 'unit-option active' : 'unit-option';
-        document.getElementById('qty-controls-un').style.display = t === 'UN' ? 'flex' : 'none';
-        document.getElementById('qty-controls-kg').style.display = t === 'KG' ? 'flex' : 'none';
-    }
+    function setUnitType(t) { currentUnit = t; document.getElementById('btn-unit-un').className = t === 'UN' ? 'unit-option active' : 'unit-option'; document.getElementById('btn-unit-kg').className = t === 'KG' ? 'unit-option active' : 'unit-option'; document.getElementById('qty-controls-un').style.display = t === 'UN' ? 'flex' : 'none'; document.getElementById('qty-controls-kg').style.display = t === 'KG' ? 'flex' : 'none'; }
     function adjustQty(d) { currentQty = Math.max(1, currentQty + d); document.getElementById('qty-display').innerText = currentQty; }
     function toggleView() { isGrouped = !isGrouped; localStorage.setItem(VIEW_KEY, isGrouped); renderCart(); }
     function saveCart() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
     function loadCart() { const c = localStorage.getItem(CART_KEY); if(c) cart = JSON.parse(c); renderCart(); }
     function clearCart() { if(confirm("¿Vaciar carrito?")) { cart = []; saveCart(); renderCart(); } }
-
     function renderCart() {
         const list = document.getElementById('cart-list'); list.innerHTML = ''; let tv = 0;
         const ri = (i) => {
             tv += i.subtotal; const li = document.createElement('li'); li.className = 'product-item';
-            const qt = i.unit_type === 'KG' ? `${i.qty} kg` : `${i.qty}x`;
-            li.innerHTML = `<div style="flex-grow:1;"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><span style="font-weight:700; font-size:0.95rem;">${i.name}</span><span class="item-qty-badge">${qt}</span></div><small style="color:#777; font-weight:600;">$${i.subtotal.toLocaleString('es-CL')} <span style="font-weight:400; opacity:0.7">($${i.price.toLocaleString('es-CL')}/${i.unit_type.toLowerCase()})</span></small></div><button class="btn-delete" onclick="removeItem(${i.id})">×</button>`;
+            li.innerHTML = `<div style="flex-grow:1;"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><span style="font-weight:700;">${i.name}</span><span class="item-qty-badge">${i.qty}${i.unit_type.toLowerCase()}</span></div><small style="color:#777;">$${i.subtotal.toLocaleString('es-CL')} ($${i.price.toLocaleString('es-CL')}/${i.unit_type.toLowerCase()})</small></div><button class="btn-delete" onclick="removeItem(${i.id})" style="border:none; background:none; font-size:1.2rem; color:#ccc;">×</button>`;
             list.appendChild(li);
         };
-        if (isGrouped) {
-            const g = {}; cart.forEach(x => { if(!g[x.category]) g[x.category] = []; g[x.category].push(x); });
-            CAT_ORDER.forEach(c => { if (g[c]) { const h = document.createElement('li'); h.className = 'category-header'; h.innerText = CATEGORIES[c]; list.appendChild(h); g[c].forEach(ri); } });
-        } else { [...cart].reverse().forEach(ri); }
+        if (isGrouped) { const g = {}; cart.forEach(x => { if(!g[x.category]) g[x.category] = []; g[x.category].push(x); }); CAT_ORDER.forEach(c => { if (g[c]) { const h = document.createElement('li'); h.className = 'category-header'; h.innerText = CATEGORIES[c]; list.appendChild(h); g[c].forEach(ri); } }); } else { [...cart].reverse().forEach(ri); }
         document.getElementById('total-amount').innerText = '$' + tv.toLocaleString('es-CL');
-        document.getElementById('view-toggle-btn').innerText = isGrouped ? "📂 Agrupado" : "📋 Simple";
         const lim = document.getElementById('budget-limit').value.replace(/\./g, '');
         document.getElementById('total-amount').className = (lim && tv > parseInt(lim)) ? 'total-price danger' : 'total-price';
     }
-
     function handleBudgetInput(i) { let v = i.value.replace(/\D/g, ''); i.value = v ? new Intl.NumberFormat('es-CL').format(parseInt(v)) : ''; renderCart(); }
     function removeItem(id) { cart = cart.filter(x => x.id !== id); saveCart(); renderCart(); }
     function closeAllModals() { document.getElementById('overlay-bg').style.display = 'none'; document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); isProcessing = false; }
     function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.className = 'show'; setTimeout(() => t.className = '', 3000); }
     function openSearchModal() { if (!document.getElementById('branch-select').value) { openLocationModal(); return showToast("⚠️ Elige ubicación"); } document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('search-modal').style.display = 'block'; document.getElementById('search-input').value = ''; document.getElementById('search-results').innerHTML = ''; document.getElementById('search-input').focus(); }
-    function createManualItem() { const t = document.getElementById('search-input').value; if(!t) return; closeAllModals(); const c = /^\d+$/.test(t) ? t : 'MAN-' + Date.now(); openProductModal({ barcode: c, name: /^\d+$/.test(t) ? "" : t, price: '', category: 'otros', unit_type: 'UN' }, true); }
-    let dbT;
-    function handleSearchTyping(t) { document.getElementById('btn-create-manual').style.display = t.length > 0 ? 'block' : 'none'; clearTimeout(dbT); dbT = setTimeout(() => searchInDB(t), 300); }
-    async function searchInDB(t) {
-        if(t.length < 2) return;
-        const sid = document.getElementById('store-select').value;
-        let q = db.from('products').select('*').limit(15);
-        if (/^\d+$/.test(t)) q = q.ilike('barcode', `${t}%`); else q = q.ilike('name', `%${t}%`);
-        const { data } = await q;
-        if (data) renderSearchResults(data.filter(x => x.store_id === sid), data.filter(x => x.store_id !== sid));
-    }
+    function handleSearchTyping(t) { document.getElementById('btn-create-manual').style.display = t.length > 0 ? 'block' : 'none'; clearTimeout(window.dbT); window.dbT = setTimeout(() => searchInDB(t), 300); }
+    async function searchInDB(t) { if(t.length < 2) return; const sid = document.getElementById('store-select').value; let q = db.from('products').select('*').limit(15); if (/^\d+$/.test(t)) q = q.ilike('barcode', `${t}%`); else q = q.ilike('name', `%${t}%`); const { data } = await q; if (data) renderSearchResults(data.filter(x => x.store_id === sid), data.filter(x => x.store_id !== sid)); }
     function renderSearchResults(l, e) {
         const list = document.getElementById('search-results'); list.innerHTML = '';
         const add = (p, text, color) => {
             const h = document.createElement('li'); h.style.cssText = `background:${color}; color:white; padding:4px 10px; font-size:0.7rem; font-weight:bold; border-radius:5px; margin-top:5px;`; h.innerText = text; list.appendChild(h);
-            p.forEach(x => {
-                const li = document.createElement('li'); li.className = 'search-result-item';
-                li.innerHTML = `<div><b>${x.name}</b><br><small>${x.barcode}</small></div><span>$${x.price.toLocaleString('es-CL')}</span>`;
-                li.onclick = () => { closeAllModals(); openProductModal(x, false); };
-                list.appendChild(li);
-            });
+            p.forEach(x => { const li = document.createElement('li'); li.className = 'search-result-item'; li.innerHTML = `<div><b>${x.name}</b><br><small>${x.barcode}</small></div><span>$${x.price.toLocaleString('es-CL')}</span>`; li.onclick = () => { closeAllModals(); openProductModal(x, false); }; list.appendChild(li); });
         };
-        if(l.length) add(l, "📍 EN ESTA TIENDA", "#2e7d32");
-        if(e.length) add(e, "🌍 EN OTROS LOCALES", "#666");
+        if(l.length) add(l, "📍 EN ESTA TIENDA", "#2e7d32"); if(e.length) add(e, "🌍 OTROS LOCALES", "#666");
     }
     function resetApp() { if(confirm("¿Reparar App?")) { localStorage.clear(); window.location.reload(); } }
+    function openLocationModal() { document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('location-modal').style.display = 'block'; }
+    function updateSyncUI() { const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); const dot = document.getElementById('sync-dot'); if (dot) dot.className = q.length > 0 ? 'sync-dot active' : 'sync-dot'; }
+    async function syncOfflineData() { const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); if (q.length === 0) return; showToast(`Sincronizando ${q.length}...`); const rem = []; for (const i of q) { const { error } = await db.from('price_reports').insert(i); if (error) rem.push(i); } localStorage.setItem(QUEUE_KEY, JSON.stringify(rem)); updateSyncUI(); if (rem.length === 0) showToast("Nube actualizada ✅"); }
 </script>
 
 </body>
