@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V29.4</title>
+    <title>Scanner Pro V29.5</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -123,7 +123,7 @@
         .product-list { list-style: none; padding: 0; }
         .category-header { background: #e8f5e9; color: #2e7d32; padding: 8px 12px; border-radius: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 5px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
         .product-item { background: white; border-bottom: 1px solid #f0f0f0; padding: 15px; display: flex; justify-content: space-between; align-items: center; animation: fadeIn 0.3s ease; }
-        .item-qty-badge { background: #2e7d32; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-right: 5px; }
+        .item-qty-badge { background: #2e7d32; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; flex-shrink: 0; margin-left: 8px; }
         .btn-delete { background: #ffcdd2; color: #c62828; border: none; padding: 8px 12px; border-radius: 6px; margin-left: 10px; cursor: pointer; font-size: 1.2rem; }
 
         /* Estilos de Estado en Historial */
@@ -403,7 +403,6 @@
         else { btn.className = 'sync-btn ok'; btn.innerHTML = `☁️ Al día`; }
     }
     
-    // --- RESET APP FUNCTIONALITY ---
     function resetApp() {
         if(confirm("¿Reparar la aplicación?\n\nEsto borrará la cola de pendientes y reiniciará la app.")) {
             localStorage.removeItem(QUEUE_KEY);
@@ -413,7 +412,6 @@
         }
     }
     
-    // --- FORMATO MILES ---
     function handleBudgetInput(input) {
         let value = input.value.replace(/\D/g, ''); 
         if (value === '') { input.value = ''; updateTotalDisplay(); return; }
@@ -427,16 +425,13 @@
         input.value = new Intl.NumberFormat('es-CL').format(parseInt(value));
     }
 
-    // --- NUEVO: MÁSCARA AUTOMÁTICA DE PESO ---
     function formatKgInput(input) {
         let value = input.value.replace(/\D/g, ''); // Solo dígitos
         if (value === '') {
             input.value = '';
             return;
         }
-        // Asume que los últimos 3 dígitos son decimales
         let num = parseInt(value) / 1000;
-        // Formatea con 3 decimales usando coma
         input.value = num.toFixed(3).replace('.', ',');
     }
 
@@ -458,7 +453,6 @@
             btnKg.classList.add('active'); btnUn.classList.remove('active');
             qtyUn.style.display = 'none'; qtyKg.style.display = 'flex';
             priceLabel.placeholder = "Precio por Kilo ($)";
-            // Set input value to 0 if not set, or keep current if valid float
             document.getElementById('inp-qty-kg').value = ''; 
         }
     }
@@ -526,7 +520,6 @@
         if (isOnline) { try { let { data } = await db.from('products').select('*').eq('barcode', code).eq('store', currentStore).single(); product = data; if(product) saveToLocalCache(product); } catch (err) {} }
         if (!product) { const cache = getLocalCache(); product = cache[`${code}_${currentStore}`]; }
         
-        // Pasamos unit_type si existe, sino 'UN'
         if (product) openProductModal(code, product.name, product.price, currentStore, false, product.category, 1, product.unit_type || 'UN'); 
         else { 
             let suggestedName = ""; let suggestedCat = "otros"; let suggestedUnit = 'UN';
@@ -635,7 +628,6 @@
         
         let finalQty = currentQty;
         if (currentUnit === 'KG') {
-            // Convierte "0,550" a "0.550" para parsear como número
             const valStr = document.getElementById('inp-qty-kg').value.replace(',', '.');
             const val = parseFloat(valStr);
             if (isNaN(val) || val <= 0) { showToast("⚠️ Ingresa el peso en Kg", "alert"); return; }
@@ -712,9 +704,13 @@
                     displayPrice = item.qty > 1 ? `$${item.subtotal.toLocaleString('es-CL')} <small style='color:#999'>($${item.price.toLocaleString('es-CL')} c/u)</small>` : `$${item.price.toLocaleString('es-CL')}`;
                 }
 
+                // NUEVA ESTRUCTURA: Nombre a la izquierda, Cantidad a la derecha
                 li.innerHTML = `
-                    <div style="flex-grow:1; cursor:pointer;" onclick="editCartItem(${item.id})">
-                        <span style="font-weight:600; font-size:1rem;">${qtyBadge} ${item.name}</span><br>
+                    <div style="flex-grow:1; cursor:pointer; margin-right:10px;" onclick="editCartItem(${item.id})">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <span style="font-weight:600; font-size:1rem; word-break: break-word;">${item.name}</span>
+                            ${qtyBadge}
+                        </div>
                         <span style="color:#666; font-size:0.9rem;">${displayPrice}</span>
                     </div>
                     <button class="btn-delete" onclick="removeFromCart(${item.id})">×</button>
