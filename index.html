@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V35.0</title>
+    <title>Scanner Pro V35.1</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -78,6 +78,7 @@
         /* DASHBOARD */
         #app-content { display: none; }
         #scanner-container { width: 100%; background: black; min-height: 250px; position: relative; overflow: hidden; display: none; }
+        #reader video { width: 100%; height: auto; object-fit: contain !important; }
         .dashboard { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 110px; }
         
         .total-box { background: white; padding: 20px; border-radius: 18px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
@@ -131,6 +132,8 @@
         .unit-option { flex: 1; padding: 10px; text-align: center; cursor: pointer; background: #f9f9f9; border: none; font-weight: 500; font-size: 0.9rem; }
         .unit-option.active { background: #2e7d32; color: white; font-weight: bold; }
         .qty-wrapper { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #f5f5f5; padding: 10px; border-radius: 8px; }
+        
+        .search-result-item { padding: 12px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
@@ -139,7 +142,7 @@
     <div class="login-logo">🛒</div>
     <div class="login-title">Scanner Pro</div>
     <button class="btn-google" onclick="signInWithGoogle()">
-        <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="G" width="20">
+        
         Ingresar con Google
     </button>
 </div>
@@ -246,7 +249,7 @@
     </div>
     <input type="text" id="modal-barcode" style="background:#f5f5f5;" disabled>
     <input type="text" id="inp-name" placeholder="Nombre">
-    <input type="text" id="inp-price" placeholder="Precio ($)" inputmode="numeric" oninput="formatCurrencyInput(this)">
+    <input type="text" id="inp-price" placeholder="Precio Unidad ($)" inputmode="numeric" oninput="formatCurrencyInput(this)">
     <div class="unit-selector" style="display:flex; margin-bottom:15px; border-radius:8px; overflow:hidden; border:1px solid #ddd;">
         <button id="btn-unit-un" class="unit-option active" onclick="setUnitType('UN')">Unidad</button>
         <button id="btn-unit-kg" class="unit-option" onclick="setUnitType('KG')">Kg</button>
@@ -256,7 +259,7 @@
     </select>
     <div id="qty-controls-un" class="qty-wrapper"><button onclick="adjustQty(-1)">−</button><span id="qty-display">1</span><button onclick="adjustQty(1)">+</button></div>
     <div id="qty-controls-kg" class="qty-wrapper" style="display:none;"><input type="text" inputmode="numeric" id="inp-qty-kg" oninput="formatKgInput(this)"><b>kg</b></div>
-    <button class="btn-confirm" style="width:100%" onclick="saveAndAdd()">AGREGAR 🛒</button>
+    <button class="btn-confirm" style="width:100%" onclick="saveAndAdd()">GUARDAR 🛒</button>
 </div>
 
 <div id="toast"></div>
@@ -270,7 +273,8 @@
     const CACHE_KEY = 'scanner_pro_products'; const QUEUE_KEY = 'scanner_pro_queue'; const CART_KEY = 'scpro_cart'; const VIEW_KEY = 'view_pref';
     let cart = []; let allStores = []; let currentBranches = []; let currentUser = null; let isOnline = navigator.onLine; let isGrouped = localStorage.getItem(VIEW_KEY) !== 'false';
     let currentQty = 1; let currentUnit = 'UN'; let html5QrCode = null; let isProcessing = false;
-    let comparisonMode = 'PROJ'; // 'PROJ' o 'REAL'
+    let comparisonMode = 'PROJ';
+    let editingItemId = null; // NUEVO: Para saber qué ítem estamos editando
 
     const CATEGORIES = { 'frutas': '🥦 Frutas y Verduras', 'carnes': '🥩 Carnes y Pescados', 'lacteos': '🧀 Lácteos y Huevos', 'despensa': '🥫 Despensa', 'otros': '📦 Otros' };
     const CAT_ORDER = ["frutas", "carnes", "lacteos", "despensa", "otros"];
@@ -319,7 +323,6 @@
         document.getElementById('display-location').innerHTML = s.value && b.value ? `${sn} • ${bn}` : "Configurar Ubicación";
     }
 
-    // --- LÓGICA DE COMPARACIÓN DE CANASTA ---
     async function openComparisonBasket() {
         if (cart.length === 0) return showToast("⚠️ Carrito vacío");
         document.getElementById('overlay-bg').style.display = 'block';
@@ -337,71 +340,37 @@
     async function renderBasketComparison() {
         const list = document.getElementById('comparison-results-list');
         list.innerHTML = '<p style="text-align:center; padding:20px;">Analizando precios...</p>';
-        
         const barcodes = [...new Set(cart.map(i => i.barcode))];
         const currentTotal = cart.reduce((acc, i) => acc + i.subtotal, 0);
         const currentStoreId = document.getElementById('store-select').value;
-
-        // Traer todos los precios de estos barcodes en cualquier tienda
         const { data: allPrices, error } = await db.from('products').select('*').in('barcode', barcodes);
         if (error) return list.innerHTML = '<p>Error al obtener datos</p>';
-
         const storesData = [];
         allStores.forEach(store => {
             if (store.id === currentStoreId) return;
-
-            let totalInStore = 0;
-            let matches = 0;
-            let totalBarcodes = barcodes.length;
-
+            let totalInStore = 0; let matches = 0; let totalBarcodes = barcodes.length;
             cart.forEach(item => {
                 const priceData = allPrices.find(p => p.barcode === item.barcode && p.store_id === store.id);
-                if (priceData) {
-                    totalInStore += Math.round(priceData.price * item.qty);
-                    matches++;
-                } else if (comparisonMode === 'PROJ') {
-                    // Si no existe, imputar precio actual
-                    totalInStore += item.subtotal;
-                }
+                if (priceData) { totalInStore += Math.round(priceData.price * item.qty); matches++; } 
+                else if (comparisonMode === 'PROJ') { totalInStore += item.subtotal; }
             });
-
             if (comparisonMode === 'REAL' && matches === 0) return;
-
             storesData.push({ store, total: totalInStore, matches, totalItems: totalBarcodes });
         });
-
-        // Ordenar del más barato al más caro
         storesData.sort((a, b) => a.total - b.total);
-
         list.innerHTML = '';
-        if (storesData.length === 0) {
-            list.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Sin datos suficientes para comparar en otros locales.</p>';
-            return;
-        }
-
+        if (storesData.length === 0) { list.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Sin datos suficientes.</p>'; return; }
         storesData.forEach(res => {
             const diff = res.total - currentTotal;
             const diffClass = diff <= 0 ? 'minus' : 'plus';
             const diffSymbol = diff <= 0 ? '' : '+';
-            const matchPercent = Math.round((res.matches / res.totalItems) * 100);
-
             const card = document.createElement('div');
             card.className = `store-comparison-card ${diff <= 0 ? 'best' : ''}`;
-            card.innerHTML = `
-                <div class="compare-row">
-                    <span style="font-weight:800; color:#2e7d32;">${res.store.name}</span>
-                    <span class="match-badge">${res.matches}/${res.totalItems} productos (${matchPercent}%)</span>
-                </div>
-                <div class="compare-row">
-                    <span class="compare-total">$${res.total.toLocaleString('es-CL')}</span>
-                    <span class="diff-badge ${diffClass}">${diffSymbol}$${diff.toLocaleString('es-CL')}</span>
-                </div>
-            `;
+            card.innerHTML = `<div class="compare-row"><span style="font-weight:800; color:#2e7d32;">${res.store.name}</span><span class="match-badge">${res.matches}/${res.totalItems} (${Math.round((res.matches/res.totalItems)*100)}%)</span></div><div class="compare-row"><span class="compare-total">$${res.total.toLocaleString('es-CL')}</span><span class="diff-badge ${diffClass}">${diffSymbol}$${diff.toLocaleString('es-CL')}</span></div>`;
             list.appendChild(card);
         });
     }
 
-    // --- FUNCIONES CORE (CÁMARA, MANUAL, CARRITO) ---
     function startScanner() {
         if (!document.getElementById('branch-select').value) { openLocationModal(); return showToast("⚠️ Elige ubicación"); }
         document.getElementById('scanner-container').style.display = 'block';
@@ -409,6 +378,7 @@
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (t) => { if (isProcessing) return; isProcessing = true; stopScanner(); checkProductInDB(t); });
     }
     function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-container').style.display = 'none'; }); else document.getElementById('scanner-container').style.display = 'none'; }
+    
     async function checkProductInDB(barcode) {
         const bid = document.getElementById('branch-select').value; showToast("🔍 Buscando...");
         const { data: loc } = await db.from('products').select('*').eq('barcode', barcode).eq('branch_id', bid).maybeSingle();
@@ -418,6 +388,15 @@
             openProductModal(ref ? { ...ref, price: '', branch_id: bid } : { barcode, name: '', price: '', category: 'otros', unit_type: 'UN' }, true);
         }
     }
+
+    // NUEVO: Función para editar un ítem del carrito
+    function editCartItem(id) {
+        const item = cart.find(x => x.id === id);
+        if (!item) return;
+        editingItemId = id;
+        openProductModal(item, false);
+    }
+
     function openProductModal(p, isNew) {
         const sid = document.getElementById('store-select').value; const bid = document.getElementById('branch-select').value;
         document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('product-modal').style.display = 'block';
@@ -426,18 +405,38 @@
         document.getElementById('modal-barcode').value = p.barcode; document.getElementById('inp-name').value = p.name || '';
         document.getElementById('inp-price').value = p.price ? new Intl.NumberFormat('es-CL').format(p.price) : '';
         document.getElementById('inp-category').value = p.category || 'otros';
-        setUnitType(p.unit_type || 'UN'); if(p.price) document.getElementById('inp-price').focus(); else document.getElementById('inp-name').focus();
+        
+        currentQty = p.qty || 1;
+        document.getElementById('qty-display').innerText = currentQty;
+        
+        setUnitType(p.unit_type || 'UN'); 
+        if (p.unit_type === 'KG' && p.qty) {
+            document.getElementById('inp-qty-kg').value = p.qty.toFixed(3).replace('.', ',');
+        }
+
+        if(p.price) document.getElementById('inp-price').focus(); else document.getElementById('inp-name').focus();
     }
+
     async function saveAndAdd() {
         const sid = document.getElementById('store-select').value; const bid = document.getElementById('branch-select').value;
         const name = document.getElementById('inp-name').value.trim(); const price = parseInt(document.getElementById('inp-price').value.replace(/\./g, ''));
         if (!name || isNaN(price)) return showToast("⚠️ Faltan datos");
         let qty = currentUnit === 'KG' ? parseFloat(document.getElementById('inp-qty-kg').value.replace(',', '.')) : currentQty;
+        if (isNaN(qty) || qty <= 0) return showToast("⚠️ Cantidad inválida");
+
         const rep = { barcode: document.getElementById('modal-barcode').value, name, price, category: document.getElementById('inp-category').value, unit_type: currentUnit, store: allStores.find(x=>x.id===sid).name, store_id: sid, branch: currentBranches.find(x=>x.id===bid).name, branch_id: bid, user_id: currentUser.id };
+        
+        // Si estamos editando, quitamos el viejo antes de agregar el nuevo corregido
+        if (editingItemId) {
+            cart = cart.filter(x => x.id !== editingItemId);
+            editingItemId = null;
+        }
+
         if (isOnline) { await db.from('price_reports').insert(rep); finalizeSave(rep, qty, false); }
         else { const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); q.push(rep); localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); updateSyncUI(); finalizeSave(rep, qty, true); }
     }
-    function finalizeSave(r, q, off) { cart.push({ ...r, id: Date.now(), qty: q, subtotal: Math.round(r.price * q) }); saveCart(); renderCart(); closeAllModals(); showToast(off ? "En cola 📡" : "Agregado 🛒"); }
+
+    function finalizeSave(r, q, off) { cart.push({ ...r, id: Date.now(), qty: q, subtotal: Math.round(r.price * q) }); saveCart(); renderCart(); closeAllModals(); showToast(off ? "En cola 📡" : "Guardado ✅"); }
     function formatKgInput(i) { let v = i.value.replace(/\D/g, ''); if (!v) return i.value = ''; i.value = (parseInt(v) / 1000).toFixed(3).replace('.', ','); }
     function formatCurrencyInput(i) { let v = i.value.replace(/\D/g, ''); i.value = v ? new Intl.NumberFormat('es-CL').format(parseInt(v)) : ''; }
     function setUnitType(t) { currentUnit = t; document.getElementById('btn-unit-un').className = t === 'UN' ? 'unit-option active' : 'unit-option'; document.getElementById('btn-unit-kg').className = t === 'KG' ? 'unit-option active' : 'unit-option'; document.getElementById('qty-controls-un').style.display = t === 'UN' ? 'flex' : 'none'; document.getElementById('qty-controls-kg').style.display = t === 'KG' ? 'flex' : 'none'; }
@@ -446,11 +445,13 @@
     function saveCart() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
     function loadCart() { const c = localStorage.getItem(CART_KEY); if(c) cart = JSON.parse(c); renderCart(); }
     function clearCart() { if(confirm("¿Vaciar carrito?")) { cart = []; saveCart(); renderCart(); } }
+    
     function renderCart() {
         const list = document.getElementById('cart-list'); list.innerHTML = ''; let tv = 0;
         const ri = (i) => {
             tv += i.subtotal; const li = document.createElement('li'); li.className = 'product-item';
-            li.innerHTML = `<div style="flex-grow:1;"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><span style="font-weight:700;">${i.name}</span><span class="item-qty-badge">${i.qty}${i.unit_type.toLowerCase()}</span></div><small style="color:#777;">$${i.subtotal.toLocaleString('es-CL')} ($${i.price.toLocaleString('es-CL')}/${i.unit_type.toLowerCase()})</small></div><button class="btn-delete" onclick="removeItem(${i.id})" style="border:none; background:none; font-size:1.2rem; color:#ccc;">×</button>`;
+            const qtyStr = i.unit_type === 'KG' ? `${i.qty.toFixed(3)}kg` : `${i.qty}x`;
+            li.innerHTML = `<div style="flex-grow:1; cursor:pointer;" onclick="editCartItem(${i.id})"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><span style="font-weight:700;">${i.name}</span><span class="item-qty-badge">${qtyStr}</span></div><small style="color:#777;">$${i.subtotal.toLocaleString('es-CL')} ($${i.price.toLocaleString('es-CL')}/${i.unit_type.toLowerCase()})</small></div><button class="btn-delete" onclick="event.stopPropagation(); removeItem(${i.id})" style="border:none; background:none; font-size:1.2rem; color:#ccc;">×</button>`;
             list.appendChild(li);
         };
         if (isGrouped) { const g = {}; cart.forEach(x => { if(!g[x.category]) g[x.category] = []; g[x.category].push(x); }); CAT_ORDER.forEach(c => { if (g[c]) { const h = document.createElement('li'); h.className = 'category-header'; h.innerText = CATEGORIES[c]; list.appendChild(h); g[c].forEach(ri); } }); } else { [...cart].reverse().forEach(ri); }
@@ -458,9 +459,10 @@
         const lim = document.getElementById('budget-limit').value.replace(/\./g, '');
         document.getElementById('total-amount').className = (lim && tv > parseInt(lim)) ? 'total-price danger' : 'total-price';
     }
+
     function handleBudgetInput(i) { let v = i.value.replace(/\D/g, ''); i.value = v ? new Intl.NumberFormat('es-CL').format(parseInt(v)) : ''; renderCart(); }
     function removeItem(id) { cart = cart.filter(x => x.id !== id); saveCart(); renderCart(); }
-    function closeAllModals() { document.getElementById('overlay-bg').style.display = 'none'; document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); isProcessing = false; }
+    function closeAllModals() { document.getElementById('overlay-bg').style.display = 'none'; document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); isProcessing = false; editingItemId = null; }
     function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.className = 'show'; setTimeout(() => t.className = '', 3000); }
     function openSearchModal() { if (!document.getElementById('branch-select').value) { openLocationModal(); return showToast("⚠️ Elige ubicación"); } document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('search-modal').style.display = 'block'; document.getElementById('search-input').value = ''; document.getElementById('search-results').innerHTML = ''; document.getElementById('search-input').focus(); }
     function handleSearchTyping(t) { document.getElementById('btn-create-manual').style.display = t.length > 0 ? 'block' : 'none'; clearTimeout(window.dbT); window.dbT = setTimeout(() => searchInDB(t), 300); }
@@ -476,7 +478,7 @@
     function resetApp() { if(confirm("¿Reparar App?")) { localStorage.clear(); window.location.reload(); } }
     function openLocationModal() { document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('location-modal').style.display = 'block'; }
     function updateSyncUI() { const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); const dot = document.getElementById('sync-dot'); if (dot) dot.className = q.length > 0 ? 'sync-dot active' : 'sync-dot'; }
-    async function syncOfflineData() { const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); if (q.length === 0) return; showToast(`Sincronizando ${q.length}...`); const rem = []; for (const i of q) { const { error } = await db.from('price_reports').insert(i); if (error) rem.push(i); } localStorage.setItem(QUEUE_KEY, JSON.stringify(rem)); updateSyncUI(); if (rem.length === 0) showToast("Nube actualizada ✅"); }
+    async function syncOfflineData() { const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); if (q.length === 0) return; showToast(`Sincronizando...`); const rem = []; for (const i of q) { const { error } = await db.from('price_reports').insert(i); if (error) rem.push(i); } localStorage.setItem(QUEUE_KEY, JSON.stringify(rem)); updateSyncUI(); if (rem.length === 0) showToast("Nube actualizada ✅"); }
 </script>
 
 </body>
