@@ -1,9 +1,10 @@
+--NUEVO
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MiCarrito V35.3</title>
+    <title>MiCarrito V35.4</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -105,12 +106,15 @@
             text-align: center; color: white; font-weight: 500; font-size: 0.9rem;
             text-shadow: 0 1px 3px rgba(0,0,0,0.8);
         }
+
+        /* BOTÓN DE CIERRE (TOP-RIGHT) */
         .scan-close-btn {
-            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.4);
-            color: white; padding: 12px 24px; border-radius: 30px; 
-            font-size: 0.9rem; font-weight: bold; cursor: pointer; z-index: 5002;
-            backdrop-filter: blur(4px); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.4);
+            color: white; width: 44px; height: 44px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; cursor: pointer; z-index: 5002;
+            backdrop-filter: blur(4px);
         }
 
         .dashboard { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 110px; }
@@ -212,20 +216,17 @@
 
 <div id="app-content">
     <header id="app-header">
-        <div id="user-profile" onclick="if(confirm('¿Cerrar sesión?')) db.auth.signOut()">
-            <img src="" class="user-avatar" id="header-avatar" alt="👤">
+        <div class="top-bar">
+            <div id="connection-status" class="connection-badge">📡 Offline</div>
+            <button id="sync-btn" class="sync-btn" onclick="syncOfflineData()">☁️ Al día</button>
+            <div class="user-profile" id="user-profile"></div>
+            <!-- BOTÓN RESET (NUEVO) -->
+            <button class="reset-btn" onclick="resetApp()" title="Reparar App">🛠️</button>
         </div>
-        
+
         <div class="location-chip" onclick="openLocationModal()">
             <span>📍</span>
             <b id="display-location">Cargando...</b>
-        </div>
-        
-        <div class="header-actions">
-            <button class="icon-btn" onclick="syncOfflineData()" title="Sincronizar">
-                ☁️<div id="sync-dot" class="sync-dot"></div>
-            </button>
-            <button class="icon-btn" onclick="resetApp()" title="Reparar">🛠️</button>
         </div>
     </header>
 
@@ -238,7 +239,7 @@
     <div id="scanner-container">
         <div id="reader"></div>
         <div class="scan-overlay"><div class="scan-frame"></div></div>
-        <button class="scan-close-btn" onclick="stopScanner()">CERRAR CÁMARA</button>
+        <button class="scan-close-btn" onclick="stopScanner()">✕</button>
     </div>
 
     <div class="dashboard">
@@ -334,9 +335,38 @@
     <button class="btn-confirm" style="width:100%; margin-top: 15px;" onclick="saveAndAdd()">GUARDAR 🛒</button>
 </div>
 
-<div id="toast"></div>
+<!-- MODAL HISTORIAL -->
+<div id="history-modal" class="modal" style="z-index: 200;">
+    <div class="modal-header">
+        <strong>📉 Historial de Reportes</strong>
+        <button onclick="document.getElementById('history-modal').style.display='none'" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">×</button>
+    </div>
+    <div style="font-size:0.8rem; color:#666; margin-bottom:10px;">Cambios significativos (últimos 30):</div>
+    <ul id="history-list" class="product-list" style="max-height: 300px; overflow-y: auto;">
+        <li style="padding:10px; color:#666;">Cargando...</li>
+    </ul>
+    <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="document.getElementById('history-modal').style.display='none'">Cerrar</button>
+</div>
+
+<!-- MODAL COMPARACIÓN -->
+<div id="comparison-modal" class="modal" style="z-index: 200;">
+    <div class="modal-header">
+        <strong>🔍 Comparación de Precios</strong>
+        <button onclick="document.getElementById('comparison-modal').style.display='none'" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">×</button>
+    </div>
+    <div style="font-size:0.8rem; color:#666; margin-bottom:10px;">Precios en otros supermercados:</div>
+    <ul id="comparison-list" class="product-list" style="max-height: 300px; overflow-y: auto;">
+        <li style="padding:10px; color:#666;">Buscando...</li>
+    </ul>
+    <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="document.getElementById('comparison-modal').style.display='none'">Cerrar</button>
+</div>
+
+<div id="toast">Mensaje...</div>
 
 <script>
+    // ==========================================
+    // ⚠️ CONFIGURACIÓN DB
+    // ==========================================
     const SUPABASE_URL = 'https://hviansyzbyzkfdmgujah.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2aWFuc3l6Ynl6a2ZkbWd1amFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMTA0OTAsImV4cCI6MjA4Mjc4NjQ5MH0.1_vn4udmbsQkKRrTMiRFatpfqtRyiq_5VBgdsKjJwW8';
     let db;
