@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Pro V35.3</title>
+    <title>MiCarrito V35.3</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -77,8 +77,42 @@
 
         /* DASHBOARD */
         #app-content { display: none; }
-        #scanner-container { width: 100%; background: black; min-height: 250px; position: relative; overflow: hidden; display: none; }
-        #reader video { width: 100%; height: auto; object-fit: contain !important; }
+        
+        /* --- NUEVO ESCÁNER INMERSIVO --- */
+        #scanner-container { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: black; z-index: 5000; display: none; 
+        }
+        #reader { width: 100%; height: 100%; }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+        
+        /* Guía Visual */
+        .scan-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5001;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .scan-frame {
+            width: 280px; height: 180px;
+            border: 2px solid rgba(46, 204, 113, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.6); /* Efecto oscuridad */
+            position: relative;
+        }
+        .scan-frame::after {
+            content: "Apunta al código de barras";
+            position: absolute; bottom: -40px; left: 0; width: 100%;
+            text-align: center; color: white; font-weight: 500; font-size: 0.9rem;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+        .scan-close-btn {
+            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.4);
+            color: white; padding: 12px 24px; border-radius: 30px; 
+            font-size: 0.9rem; font-weight: bold; cursor: pointer; z-index: 5002;
+            backdrop-filter: blur(4px); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
         .dashboard { padding: 15px; max-width: 600px; margin: 0 auto; padding-bottom: 110px; }
         
         .total-box { background: white; padding: 20px; border-radius: 18px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
@@ -107,8 +141,8 @@
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
         input, select { width: 100%; padding: 14px; border: 1.5px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; margin-bottom: 12px; outline: none; }
         .modal-btns { display: flex; gap: 10px; margin-top: 15px; }
-        .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 16px; border: none; border-radius: 12px; font-weight: bold; font-size: inherit; }
-        .btn-cancel { flex: 1; background: #f5f5f5; color: #666; padding: 16px; border: none; border-radius: 12px; font-weight: bold; font-size: inherit; }
+        .btn-confirm { flex: 2; background: #2e7d32; color: white; padding: 16px; border: none; border-radius: 12px; font-weight: bold; }
+        .btn-cancel { flex: 1; background: #f5f5f5; color: #666; padding: 16px; border: none; border-radius: 12px; font-weight: bold; }
 
         /* COMPARADOR DE CANASTA */
         .store-comparison-card { background: #fff; border: 1.5px solid #eee; border-radius: 16px; padding: 15px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -133,7 +167,6 @@
         .unit-option.active { background: #2e7d32; color: white; font-weight: bold; }
         .qty-wrapper { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #f5f5f5; padding: 10px; border-radius: 8px; }
         
-        /* --- NUEVOS ESTILOS SELECTOR CANTIDAD (TOUCH-FRIENDLY) --- */
         .btn-qty {
             width: 48px;
             height: 48px;
@@ -201,9 +234,11 @@
         <button class="fab-btn fab-main" onclick="startScanner()" title="Escanear Producto">📷</button>
     </div>
 
+    <!-- ESCÁNER FULL SCREEN -->
     <div id="scanner-container">
         <div id="reader"></div>
-        <button onclick="stopScanner()" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.6); color:white; border:none; padding:8px 15px; border-radius:10px; font-weight:bold;">X</button>
+        <div class="scan-overlay"><div class="scan-frame"></div></div>
+        <button class="scan-close-btn" onclick="stopScanner()">CERRAR CÁMARA</button>
     </div>
 
     <div class="dashboard">
@@ -485,7 +520,7 @@
     function toggleView() { isGrouped = !isGrouped; localStorage.setItem(VIEW_KEY, isGrouped); renderCart(); }
     function saveCart() { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
     function loadCart() { const c = localStorage.getItem(CART_KEY); if(c) cart = JSON.parse(c); renderCart(); }
-    function clearCart() { if(confirm("¿Vaciar carrito?")) { cart = []; saveCart(); renderCart(); } }
+    function clearCart() { if(confirm("¿Vaciar carrito?")) { cart = []; saveCart(); renderCart(); showToast("Carrito vaciado"); } }
     
     function renderCart() {
         const list = document.getElementById('cart-list'); list.innerHTML = ''; let tv = 0;
