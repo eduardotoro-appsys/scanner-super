@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MiCarrito V35.41</title>
+    <title>MiCarrito V35.42</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -215,17 +215,20 @@
 
 <div id="app-content">
     <header id="app-header">
-        <div class="top-bar">
-            <div id="connection-status" class="connection-badge">📡 Offline</div>
-            <button id="sync-btn" class="sync-btn" onclick="syncOfflineData()">☁️ Al día</button>
-            <div class="user-profile" id="user-profile"></div>
-            <!-- BOTÓN RESET (NUEVO) -->
-            <button class="reset-btn" onclick="resetApp()" title="Reparar App">🛠️</button>
+        <div id="user-profile" onclick="if(confirm('¿Cerrar sesión?')) db.auth.signOut()">
+            <img src="" class="user-avatar" id="header-avatar" alt="👤">
         </div>
-
+        
         <div class="location-chip" onclick="openLocationModal()">
             <span>📍</span>
             <b id="display-location">Cargando...</b>
+        </div>
+        
+        <div class="header-actions">
+            <button class="icon-btn" onclick="syncOfflineData()" title="Sincronizar">
+                ☁️<div id="sync-dot" class="sync-dot"></div>
+            </button>
+            <button class="icon-btn" onclick="resetApp()" title="Reparar">🛠️</button>
         </div>
     </header>
 
@@ -334,33 +337,7 @@
     <button class="btn-confirm" style="width:100%; margin-top: 15px;" onclick="saveAndAdd()">GUARDAR 🛒</button>
 </div>
 
-<!-- MODAL HISTORIAL -->
-<div id="history-modal" class="modal" style="z-index: 200;">
-    <div class="modal-header">
-        <strong>📉 Historial de Reportes</strong>
-        <button onclick="document.getElementById('history-modal').style.display='none'" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">×</button>
-    </div>
-    <div style="font-size:0.8rem; color:#666; margin-bottom:10px;">Cambios significativos (últimos 30):</div>
-    <ul id="history-list" class="product-list" style="max-height: 300px; overflow-y: auto;">
-        <li style="padding:10px; color:#666;">Cargando...</li>
-    </ul>
-    <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="document.getElementById('history-modal').style.display='none'">Cerrar</button>
-</div>
-
-<!-- MODAL COMPARACIÓN -->
-<div id="comparison-modal" class="modal" style="z-index: 200;">
-    <div class="modal-header">
-        <strong>🔍 Comparación de Precios</strong>
-        <button onclick="document.getElementById('comparison-modal').style.display='none'" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">×</button>
-    </div>
-    <div style="font-size:0.8rem; color:#666; margin-bottom:10px;">Precios en otros supermercados:</div>
-    <ul id="comparison-list" class="product-list" style="max-height: 300px; overflow-y: auto;">
-        <li style="padding:10px; color:#666;">Buscando...</li>
-    </ul>
-    <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="document.getElementById('comparison-modal').style.display='none'">Cerrar</button>
-</div>
-
-<div id="toast">Mensaje...</div>
+<div id="toast"></div>
 
 <script>
     // ==========================================
