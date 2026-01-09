@@ -68,6 +68,22 @@ TO authenticated
 WITH CHECK (true);
 
 -- =================================================================
+-- FASE 0.5: POBLAMIENTO INICIAL DE SUPERMERCADOS (CHILE)
+-- =================================================================
+
+INSERT INTO public.stores (name, base_color) VALUES 
+    ('Lider', '#0071ce'),
+    ('Jumbo', '#009e49'),
+    ('Unimarc', '#e30613'),
+    ('Santa Isabel', '#f9a31a'),
+    ('Tottus', '#80b41c'),
+    ('aCuenta', '#ff6d00'),
+    ('Mayorista 10', '#1c4587'),
+    ('Alvi', '#005baa'),
+    ('Erbi', '#ed1c24')
+ON CONFLICT (name) DO NOTHING;
+
+-- =================================================================
 -- FASE 1: CREAR NUEVAS TABLAS NORMALIZADAS (CON AUDITORÍA COMPLETA)
 -- =================================================================
 
