@@ -1,4 +1,28 @@
 -- =================================================================
+-- FASE -1: LIMPIEZA TOTAL (RESET)
+-- ¡ADVERTENCIA! ESTO BORRA TODOS LOS DATOS EXISTENTES
+-- =================================================================
+
+DROP TRIGGER IF EXISTS on_new_report ON public.price_reports;
+DROP TRIGGER IF EXISTS update_store_products_modtime ON public.store_products;
+DROP TRIGGER IF EXISTS update_branch_prices_modtime ON public.branch_prices;
+
+DROP FUNCTION IF EXISTS public.process_price_report_v2();
+DROP FUNCTION IF EXISTS public.update_updated_at_column();
+DROP FUNCTION IF EXISTS public.process_price_report(); -- Versión antigua si existiera
+
+DROP VIEW IF EXISTS public.products;
+
+-- Borrar tablas con CASCADE para eliminar dependencias (Foreign Keys)
+DROP TABLE IF EXISTS public.price_reports CASCADE;
+DROP TABLE IF EXISTS public.branch_prices CASCADE;
+DROP TABLE IF EXISTS public.store_products CASCADE;
+DROP TABLE IF EXISTS public.products_backup_legacy CASCADE;
+DROP TABLE IF EXISTS public.products CASCADE; -- Tabla original antigua
+DROP TABLE IF EXISTS public.branches CASCADE;
+DROP TABLE IF EXISTS public.stores CASCADE;
+
+-- =================================================================
 -- FASE 0: CREAR TABLAS MAESTRAS DE LOCALIZACIÓN
 -- =================================================================
 
@@ -124,54 +148,15 @@ TO authenticated
 USING (auth.uid() = user_id);
 
 -- =================================================================
--- FASE 2: MIGRACIÓN DE DATOS (Rescatar lo que ya tienes)
+-- FASE 2: MIGRACIÓN DE DATOS (OMITIDA POR LIMPIEZA)
+-- Como estamos limpiando todo, no migramos datos antiguos.
 -- =================================================================
-
--- 1. Migrar Catálogo Único (Nombres) desde la tabla vieja 'products'
-INSERT INTO public.store_products (
-    store_id, barcode, name, category, unit_type, 
-    created_at, created_by, updated_at, updated_by
-)
-SELECT DISTINCT ON (store_id, barcode) 
-    store_id, 
-    barcode, 
-    name, 
-    category, 
-    unit_type,
-    coalesce(updated_at, now()), -- Si no hay fecha, usamos ahora
-    updated_by,                  -- Asumimos que el creador es el último que actualizó (proxy)
-    coalesce(updated_at, now()), 
-    updated_by
-FROM public.products
-WHERE store_id IS NOT NULL
-ON CONFLICT DO NOTHING; -- Evitar errores si se corre múltiples veces
-
--- 2. Migrar Precios Históricos desde la tabla vieja 'products'
-INSERT INTO public.branch_prices (
-    branch_id, barcode, price, 
-    created_at, created_by, updated_at, updated_by
-)
-SELECT 
-    branch_id, 
-    barcode, 
-    price, 
-    coalesce(updated_at, now()), 
-    updated_by, 
-    coalesce(updated_at, now()), 
-    updated_by
-FROM public.products
-WHERE branch_id IS NOT NULL
-ON CONFLICT DO NOTHING;
 
 -- =================================================================
 -- FASE 3: LA CAPA DE COMPATIBILIDAD (VIEW)
 -- =================================================================
 
--- 1. Renombrar la tabla vieja para no perderla (Backup)
--- NOTA: Si ya corriste esto antes, puede dar error, puedes comentar esta línea
-ALTER TABLE public.products RENAME TO products_backup_legacy;
-
--- 2. Crear la VISTA 'products'
+-- Crear la VISTA 'products'
 -- Esta vista une las dos tablas nuevas para que la App crea que sigue leyendo la tabla vieja.
 CREATE OR REPLACE VIEW public.products AS
 SELECT 
