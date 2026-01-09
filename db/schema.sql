@@ -84,6 +84,16 @@ INSERT INTO public.stores (name, base_color) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- =================================================================
+-- FASE 0.6: POBLAMIENTO INICIAL DE SUCURSALES GENÉRICAS
+-- =================================================================
+
+-- Inserta una sucursal "Sucursal Principal" para cada tienda creada arriba
+INSERT INTO public.branches (store_id, name, city)
+SELECT id, 'Sucursal Principal', 'Santiago'
+FROM public.stores
+ON CONFLICT (store_id, name) DO NOTHING;
+
+-- =================================================================
 -- FASE 1: CREAR NUEVAS TABLAS NORMALIZADAS (CON AUDITORÍA COMPLETA)
 -- =================================================================
 
