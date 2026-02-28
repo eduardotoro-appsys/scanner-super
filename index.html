@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MiCarrito V0.04</title>
+    <title>MiCarrito V0.05</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -371,10 +371,9 @@
     
     let html5QrCode = null; 
     let isProcessing = false;
-    
-    // --- NUEVAS VARIABLES PARA CONTROL EXACTO DE CÁMARA ---
-    let availableCameras = [];
-    let currentCameraIndex = 0;
+
+    // --- CONTROL DE CÁMARA ---
+    let currentFacingMode = "environment"; // Por defecto, trasera    
 
     let comparisonMode = 'PROJ';
     let editingItemId = null;
@@ -483,58 +482,33 @@
 
     
     async function switchCamera() {
-        if (availableCameras.length <= 1) {
-            showToast("No se detectan múltiples cámaras");
-            return;
-        }
         if (isProcessing) return;
 
         try {
-            // Detenemos y limpiamos la cámara actual
-            await html5QrCode.stop();
-            html5QrCode.clear();
+            if (html5QrCode) {
+                await html5QrCode.stop();
+                html5QrCode.clear();
+            }
         } catch (err) {
             console.warn("Limpiando cámara previa...", err);
         }
 
-        // Pasamos a la siguiente cámara de la lista
-        currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+        // Alternamos entre trasera y frontal
+        currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
 
-        // Le damos a iOS sus 300ms de respiro obligatorios
+        // 500ms de respiro obligatorio para iOS
         setTimeout(() => {
             startScanner2(); 
-        }, 300);
+        }, 500);
     }
 
     async function startScanner2() {
         if (!document.getElementById('branch-select').value) { openLocationModal(); return showToast("⚠️ Elige ubicación"); }
         document.getElementById('scanner-container').style.display = 'block';
         
-        // Inicializamos el objeto si no existe
-        //if (!html5QrCode) {
-        //    html5QrCode = new Html5Qrcode("reader", { experimentalFeatures: { useBarCodeDetectorIfSupported: true } });
-        //}
-
-        html5QrCode = new Html5Qrcode("reader");
-
-        // EL TRUCO PARA iOS: Obtener la lista exacta de cámaras físicas
-        if (availableCameras.length === 0) {
-            try {
-                const devices = await Html5Qrcode.getCameras();
-                if (devices && devices.length > 0) {
-                    availableCameras = devices;
-                    // Buscamos inteligentemente cuál es la trasera
-                    const backCamIdx = devices.findIndex(c => 
-                        c.label.toLowerCase().includes('back') || 
-                        c.label.toLowerCase().includes('trasera') || 
-                        c.label.toLowerCase().includes('environment')
-                    );
-                    // Si encuentra la trasera, la usa; si no, usa la primera (0)
-                    currentCameraIndex = backCamIdx > -1 ? backCamIdx : 0; 
-                }
-            } catch (err) {
-                console.error("Error obteniendo lista de cámaras:", err);
-            }
+        // Instancia siempre fresca
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("reader");
         }
 
         const scanConfig = { 
@@ -543,19 +517,30 @@
             videoConstraints: { focusMode: "continuous" }
         };
         
-        // Pasamos el ID EXACTO del hardware en lugar de "facingMode"
-        const cameraToUse = availableCameras.length > 0 
-            ? availableCameras[currentCameraIndex].id 
-            : { facingMode: "environment" }; // Fallback por si acaso
+        // PLAN A: Ser estrictos con iOS
+        const cameraConfig = currentFacingMode === "environment" 
+            ? { facingMode: { exact: "environment" } } 
+            : { facingMode: "user" };
 
-        html5QrCode.start(cameraToUse, scanConfig, (t) => { 
+        html5QrCode.start(cameraConfig, scanConfig, (t) => { 
             if (isProcessing) return; 
             isProcessing = true; 
             stopScanner(); 
             checkProductInDB(t); 
         }).catch(err => {
-            console.error("Error al iniciar cámara:", err);
-            showToast("Error de cámara.");
+            console.warn("Fallo el modo estricto, intentando modo flexible...", err);
+            
+            // PLAN B: Si el iPhone rechaza el 'exact' (Pasa en algunos modelos)
+            html5QrCode.start({ facingMode: currentFacingMode }, scanConfig, (t) => {
+                if (isProcessing) return; 
+                isProcessing = true; 
+                stopScanner(); 
+                checkProductInDB(t); 
+            }).catch(e => {
+                console.error("Error definitivo de cámara:", e);
+                showToast("Error al abrir cámara.");
+                stopScanner();
+            });
         });
     }
     
