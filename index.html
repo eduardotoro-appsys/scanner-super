@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MiCarrito V35.44</title>
+    <title>MiCarrito V0.01</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -109,6 +109,16 @@
         /* BOTÓN DE CIERRE (TOP-RIGHT) */
         .scan-close-btn {
             position: absolute; top: 20px; right: 20px;
+            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.4);
+            color: white; width: 44px; height: 44px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; cursor: pointer; z-index: 5002;
+            backdrop-filter: blur(4px);
+        }
+
+        /* BOTÓN DE CAMBIO DE CÁMARA (TOP-LEFT) */
+        .scan-switch-btn {
+            position: absolute; top: 20px; left: 20px;
             background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.4);
             color: white; width: 44px; height: 44px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
@@ -242,6 +252,7 @@
         <div id="reader"></div>
         <div class="scan-overlay"><div class="scan-frame"></div></div>
         <button class="scan-close-btn" onclick="stopScanner()">✕</button>
+        <button class="scan-switch-btn" onclick="switchCamera()">🔄</button>
     </div>
 
     <div class="dashboard">
@@ -461,6 +472,20 @@
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (t) => { if (isProcessing) return; isProcessing = true; stopScanner(); checkProductInDB(t); });
     }
 
+    let currentFacingMode = "environment"; // Estado inicial: trasera
+    async function switchCamera() {
+        if (html5QrCode) {
+            // 1. Detenemos el escaneo actual
+            await html5QrCode.stop();
+            
+            // 2. Alternamos el modo
+            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+            
+            // 3. Reiniciamos con la nueva configuración
+            startScanner2(); 
+        }
+    }
+
     function startScanner2() {
         if (!document.getElementById('branch-select').value) { openLocationModal(); return showToast("⚠️ Elige ubicación"); }
         document.getElementById('scanner-container').style.display = 'block';
@@ -485,8 +510,10 @@
                 focusMode: "continuous" // Ayuda al autoenfoque en móviles
             }
         };
-
-        html5QrCode.start({ facingMode: { exact: "environment" } }, scanConfig, (t) => { 
+        
+        
+        
+        html5QrCode.start({ facingMode: currentFacingMode }, scanConfig, (t) => { 
             if (isProcessing) return; 
             isProcessing = true; 
             stopScanner(); 
