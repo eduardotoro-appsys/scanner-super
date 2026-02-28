@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MiCarrito V0.03</title>
+    <title>MiCarrito V0.04</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -481,7 +481,7 @@
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (t) => { if (isProcessing) return; isProcessing = true; stopScanner(); checkProductInDB(t); });
     }
 
-    let currentFacingMode = "environment"; // Estado inicial: trasera
+    
     async function switchCamera() {
         if (availableCameras.length <= 1) {
             showToast("No se detectan múltiples cámaras");
@@ -511,9 +511,11 @@
         document.getElementById('scanner-container').style.display = 'block';
         
         // Inicializamos el objeto si no existe
-        if (!html5QrCode) {
-            html5QrCode = new Html5Qrcode("reader", { experimentalFeatures: { useBarCodeDetectorIfSupported: true } });
-        }
+        //if (!html5QrCode) {
+        //    html5QrCode = new Html5Qrcode("reader", { experimentalFeatures: { useBarCodeDetectorIfSupported: true } });
+        //}
+
+        html5QrCode = new Html5Qrcode("reader");
 
         // EL TRUCO PARA iOS: Obtener la lista exacta de cámaras físicas
         if (availableCameras.length === 0) {
