@@ -234,7 +234,7 @@
 
     <div class="fab-container">
         <button class="fab-btn fab-secondary" onclick="openSearchModal()" title="Ingreso Manual">✍️</button>
-        <button class="fab-btn fab-main" onclick="startScanner()" title="Escanear Producto">📷</button>
+        <button class="fab-btn fab-main" onclick="startScanner2()" title="Escanear Producto">📷</button>
     </div>
 
     <!-- ESCÁNER FULL SCREEN -->
@@ -460,6 +460,37 @@
         html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (t) => { if (isProcessing) return; isProcessing = true; stopScanner(); checkProductInDB(t); });
     }
+
+    function startScanner2() {
+        if (!document.getElementById('branch-select').value) { openLocationModal(); return showToast("⚠️ Elige ubicación"); }
+        document.getElementById('scanner-container').style.display = 'block';
+        
+        // 1. Inicializar con la API nativa de iOS/Android si está disponible
+        html5QrCode = new Html5Qrcode("reader", {
+            experimentalFeatures: {
+                useBarCodeDetectorIfSupported: true
+            }
+        });
+
+        // 2. Forzar resolución HD para mejorar la lectura a distancia
+        const scanConfig = { 
+            fps: 15, // Un poco más de cuadros por segundo para mayor fluidez
+            qrbox: { width: 250, height: 150 },
+            videoConstraints: {
+                width: { min: 1280, ideal: 1920, max: 2560 },
+                height: { min: 720, ideal: 1080, max: 1440 },
+                focusMode: "continuous" // Ayuda al autoenfoque en móviles
+            }
+        };
+
+        html5QrCode.start({ facingMode: "environment" }, scanConfig, (t) => { 
+            if (isProcessing) return; 
+            isProcessing = true; 
+            stopScanner(); 
+            checkProductInDB(t); 
+        });
+    }
+    
     function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-container').style.display = 'none'; }); else document.getElementById('scanner-container').style.display = 'none'; }
     
     async function checkProductInDB(barcode) {
