@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MiCarrito V0.01</title>
+    <title>MiCarrito V0.02</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -475,14 +475,24 @@
     let currentFacingMode = "environment"; // Estado inicial: trasera
     async function switchCamera() {
         if (html5QrCode) {
-            // 1. Detenemos el escaneo actual
-            await html5QrCode.stop();
+            // Evitamos que el usuario presione el botón varias veces rápido
+            if (isProcessing) return; 
+            
+            try {
+                // 1. Detenemos el escaneo
+                await html5QrCode.stop();
+                html5QrCode.clear(); // Limpiamos el visor (muy importante en iOS)
+            } catch (err) {
+                console.warn("Error deteniendo la cámara:", err);
+            }
             
             // 2. Alternamos el modo
             currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
             
-            // 3. Reiniciamos con la nueva configuración
-            startScanner2(); 
+            // 3. EL TRUCO PARA iOS: Esperar un momento a que el hardware se libere
+            setTimeout(() => {
+                startScanner2(); 
+            }, 300); // 300ms suele ser el punto dulce
         }
     }
 
@@ -511,13 +521,20 @@
             }
         };
         
+        // Configuración estricta para iOS
+        const cameraConfig = currentFacingMode === "environment" 
+            ? { facingMode: { exact: "environment" } } // Obliga a usar la trasera
+            : { facingMode: "user" };                  // Frontal normal        
         
-        
-        html5QrCode.start({ facingMode: currentFacingMode }, scanConfig, (t) => { 
+        // Iniciamos con la nueva configuración
+        html5QrCode.start(cameraConfig, scanConfig, (t) => { 
             if (isProcessing) return; 
             isProcessing = true; 
             stopScanner(); 
             checkProductInDB(t); 
+        }).catch(err => {
+            console.error("Error al iniciar la cámara:", err);
+            showToast("Error al abrir cámara. Intenta de nuevo.");
         });
     }
     
