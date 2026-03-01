@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MiCarrito V0.11</title>
+    <title>MiCarrito V0.12</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2e7d32">
@@ -643,6 +643,34 @@
     function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.className = 'show'; setTimeout(() => t.className = '', 3000); }
     function openSearchModal() { if (!document.getElementById('branch-select').value) { openLocationModal(); return showToast("⚠️ Elige ubicación"); } document.getElementById('overlay-bg').style.display = 'block'; document.getElementById('search-modal').style.display = 'block'; document.getElementById('search-input').value = ''; document.getElementById('search-results').innerHTML = ''; document.getElementById('search-input').focus(); }
     function handleSearchTyping(t) { document.getElementById('btn-create-manual').style.display = t.length > 0 ? 'block' : 'none'; clearTimeout(window.dbT); window.dbT = setTimeout(() => searchInDB(t), 300); }
+    function createManualItem() {
+        // 1. Obtenemos lo que el usuario escribió en el buscador
+        const val = document.getElementById('search-input').value.trim();
+        if (!val) return; 
+
+        // 2. Preparamos el esqueleto del producto nuevo
+        let newProduct = {
+            barcode: '',
+            name: '',
+            price: '',
+            category: 'otros',
+            unit_type: 'UN'
+        };
+
+        // 3. ¿Es un código numérico o un nombre de producto?
+        if (/^\d+$/.test(val)) {
+            // Si son puros números, lo usamos como código de barras
+            newProduct.barcode = val;
+        } else {
+            // Si es texto, lo usamos como nombre y generamos un código de barras interno
+            newProduct.barcode = 'MANUAL-' + Date.now();
+            newProduct.name = val.charAt(0).toUpperCase() + val.slice(1); // Pone la 1ra letra en mayúscula
+        }
+
+        // 4. Cerramos el buscador y abrimos el modal de producto
+        closeAllModals();
+        openProductModal(newProduct, true);
+    }    
     async function searchInDB(t) { if(t.length < 2) return; const sid = document.getElementById('store-select').value; let q = db.from('products').select('*').limit(15); if (/^\d+$/.test(t)) q = q.ilike('barcode', `${t}%`); else q = q.ilike('name', `%${t}%`); const { data } = await q; if (data) renderSearchResults(data.filter(x => x.store_id === sid), data.filter(x => x.store_id !== sid)); }
     function renderSearchResults(l, e) {
         const list = document.getElementById('search-results'); list.innerHTML = '';
